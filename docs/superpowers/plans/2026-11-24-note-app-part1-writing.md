@@ -10,7 +10,7 @@
 
 **Spec:** `docs/2026-11-24-note-app-design.md`
 
-**Execution environment:** 美織のPC上のClaude Code（npmでのインストールが必要なため）。最終確認は美織のiPad Proと Apple Pencil Pro の実機で行う。
+**Execution environment:** 利用者のPC上のClaude Code（npmでのインストールが必要なため）。最終確認は利用者のiPad Proと Apple Pencil Pro の実機で行う。
 
 ## Global Constraints
 
@@ -266,6 +266,6 @@ interface Note { id: string; sectionId: string; title: string; background: Backg
 - [ ] **Step 1:** `vite-plugin-pwa` を設定（名前「ノート」、`display: 'standalone'`、`theme_color: '#F7F8FA'`、フォント・PDF.jsのworkerを含む全ファイルを事前キャッシュ）。`base` はGitHub Pagesのリポジトリ名に合わせる
 - [ ] **Step 2:** 起動時に `requestPersistentStorage()` を呼ぶ
 - [ ] **Step 3:** `npm run build && npx vitest run` → ビルド成功、全テストPASS
-- [ ] **Step 4:** GitHub Actionsで `main` へのpush時に `dist` をGitHub Pagesへ公開するworkflowを作り、美織のGitHubアカウントのリポジトリにpush
+- [ ] **Step 4:** GitHub Actionsで `main` へのpush時に `dist` をGitHub Pagesへ公開するworkflowを作り、利用者のGitHubアカウントのリポジトリにpush
 - [ ] **Step 5:** iPad実機で最終確認：公開URLをSafariで開いて「ホーム画面に追加」／機内モードにしてもホーム画面から起動して書ける／書いた内容が再起動後も残る
 - [ ] **Step 6:** `git commit -m "feat: offline pwa and github pages deploy"`

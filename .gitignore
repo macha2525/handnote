@@ -2,4 +2,3 @@ node_modules/
 dist/
 .superpowers/
 *.log
-docs/superpowers/specs/

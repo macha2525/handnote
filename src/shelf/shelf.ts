@@ -72,7 +72,7 @@ export async function openShelf(root: HTMLElement, nav: { openNotebook(id: strin
     const title = el('input');
     title.required = true;
     title.maxLength = 60;
-    title.placeholder = '例：臨床心理学概論';
+    title.placeholder = '例：統計学入門';
     titleLabel.append(title);
 
     const kindSet = el('fieldset', 'field');
