@@ -15,7 +15,20 @@ export const PEN_SIZES = [
 export const HIGHLIGHTER = { color: MARKER, size: 14 };
 export const ERASER_RADIUS = 10;
 
-export interface ToolState { tool: Tool; penColor: string; penSize: number; }
+export type EraserMode = 'stroke' | 'part';
+export const ERASER_MODES: { value: EraserMode; name: string; title: string }[] = [
+  { value: 'stroke', name: '線ごと', title: '消しゴム：触れた線をまるごと消す' },
+  { value: 'part', name: '部分', title: '消しゴム：触れたところだけ消す' },
+];
+export interface ToolState { tool: Tool; penColor: string; penSize: number; eraserMode: EraserMode; }
+
+const ERASER_MODE_KEY = 'handnote.eraserMode';
+function loadEraserMode(): EraserMode {
+  try { return localStorage.getItem(ERASER_MODE_KEY) === 'part' ? 'part' : 'stroke'; } catch { return 'stroke'; }
+}
+function saveEraserMode(m: EraserMode): void {
+  try { localStorage.setItem(ERASER_MODE_KEY, m); } catch { /* 保存できなくても動く */ }
+}
 
 export interface Toolbar {
   el: HTMLElement;
@@ -42,7 +55,7 @@ export function createToolbar(opts: {
   onAddPage(): void;
   onImportPdf(file: File): void;
 }): Toolbar {
-  const state: ToolState = { tool: 'pen', penColor: PEN_COLORS[0].value, penSize: PEN_SIZES[1].value };
+  const state: ToolState = { tool: 'pen', penColor: PEN_COLORS[0].value, penSize: PEN_SIZES[1].value, eraserMode: loadEraserMode() };
   const el = document.createElement('div');
   el.className = 'toolbar';
 
@@ -69,6 +82,14 @@ export function createToolbar(opts: {
     return b;
   });
 
+  const eraserBtns = ERASER_MODES.map(m => {
+    const b = button(m.name, m.title, () => {
+      state.eraserMode = m.value; saveEraserMode(m.value); select('eraser');
+    }, 'tb-size');
+    b.dataset.value = m.value;
+    return b;
+  });
+
   const undo = button('元に戻す', '元に戻す', opts.onUndo);
   const redo = button('やり直す', 'やり直す', opts.onRedo);
   const addPage = button('ページを足す', 'ページを足す', opts.onAddPage);
@@ -85,13 +106,14 @@ export function createToolbar(opts: {
   const importPdf = button('PDFを取り込む', 'PDFを取り込む', () => fileInput.click());
 
   const sep = () => { const s = document.createElement('span'); s.className = 'tb-sep'; return s; };
-  el.append(back, title, sep(), toolBtns.pen, ...colorBtns, ...sizeBtns, toolBtns.highlighter, toolBtns.eraser,
+  el.append(back, title, sep(), toolBtns.pen, ...colorBtns, ...sizeBtns, toolBtns.highlighter, toolBtns.eraser, ...eraserBtns,
     sep(), undo, redo, sep(), addPage, importPdf, fileInput);
 
   function refresh() {
     for (const [t, b] of Object.entries(toolBtns)) b.classList.toggle('is-on', state.tool === t);
     for (const b of colorBtns) b.classList.toggle('is-on', state.tool === 'pen' && b.dataset.value === state.penColor);
     for (const b of sizeBtns) b.classList.toggle('is-on', state.tool === 'pen' && Number(b.dataset.value) === state.penSize);
+    for (const b of eraserBtns) b.classList.toggle('is-on', state.tool === 'eraser' && b.dataset.value === state.eraserMode);
   }
   function select(t: Tool) { state.tool = t; refresh(); }
   refresh();

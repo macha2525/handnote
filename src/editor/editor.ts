@@ -6,7 +6,7 @@ import { openPdf, insertBlankPageAfter, visiblePageRange, type PdfDoc } from '..
 import { History, type InkOp } from '../ink/history';
 import { attachInkInput, type InputState } from '../ink/input';
 import { drawPage, fillStroke } from '../ink/render';
-import { eraseAt } from '../ink/eraser';
+import { eraseAt, erasePartAt } from '../ink/eraser';
 import { createAutosave } from './autosave';
 import { createToolbar, HIGHLIGHTER, ERASER_RADIUS } from './toolbar';
 
@@ -210,7 +210,9 @@ export async function openEditor(root: HTMLElement, noteId: string, opts: Editor
     const v = views[i];
     let live: Stroke | null = null;
     let liveCanvas: HTMLCanvasElement | null = null;
-    let erased: Stroke[] = [];
+    // 消しゴム1回（ペンを置いてから離すまで）の前の線。取り消すとこの状態に、重なり順もそのまま戻る
+    let beforeErase: Stroke[] = [];
+    let erasedAny = false;
     let ps = 1;
 
     let liveFrame = 0;
@@ -229,10 +231,16 @@ export async function openEditor(root: HTMLElement, noteId: string, opts: Editor
     };
     const erase = (p: StrokePoint) => {
       const page = note.pages[i];
-      const { kept, removed } = eraseAt(page.strokes, p, ERASER_RADIUS);
-      if (!removed.length) return;
-      page.strokes = kept;
-      erased.push(...removed);
+      if (toolbar.state.eraserMode === 'part') {
+        const { strokes, changed } = erasePartAt(page.strokes, p, ERASER_RADIUS);
+        if (!changed) return;
+        page.strokes = strokes;
+      } else {
+        const { kept, removed } = eraseAt(page.strokes, p, ERASER_RADIUS);
+        if (!removed.length) return;
+        page.strokes = kept;
+      }
+      erasedAny = true;
       drawInk(i);
     };
 
@@ -241,7 +249,7 @@ export async function openEditor(root: HTMLElement, noteId: string, opts: Editor
       getScale: scale,
       onStrokeStart(p) {
         const t = toolbar.state;
-        if (t.tool === 'eraser') { erased = []; erase(p); return; }
+        if (t.tool === 'eraser') { beforeErase = note.pages[i].strokes; erasedAny = false; erase(p); return; }
         const page = note.pages[i];
         ps = pixelScale(page, scale());
         live = t.tool === 'pen'
@@ -265,14 +273,15 @@ export async function openEditor(root: HTMLElement, noteId: string, opts: Editor
           live = null;
           if (liveFrame) { cancelAnimationFrame(liveFrame); liveFrame = 0; }
           liveCanvas?.remove(); liveCanvas = null;
-          note.pages[i].strokes.push(s);
+          // 配列は作り直す（取り消し用に覚えている前後の状態を書き換えないため）
+          note.pages[i].strokes = [...note.pages[i].strokes, s];
           const op: InkOp = { kind: 'add', stroke: s };
           history.push(op); opPage.set(op, note.pages[i].id);
           drawInk(i);
           changed();
-        } else if (erased.length) {
-          const op: InkOp = { kind: 'remove', strokes: erased };
-          erased = [];
+        } else if (erasedAny) {
+          const op: InkOp = { kind: 'replace', before: beforeErase, after: note.pages[i].strokes };
+          beforeErase = []; erasedAny = false;
           history.push(op); opPage.set(op, note.pages[i].id);
           changed();
         }

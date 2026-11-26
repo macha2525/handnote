@@ -1,17 +1,17 @@
 import type { Stroke } from '../model/types';
 
-export type InkOp = { kind: 'add'; stroke: Stroke } | { kind: 'remove'; strokes: Stroke[] };
+/** replace：消しゴム1回ぶん。ページの線を前後まるごと覚えるので、取り消しても重なり順が変わらない */
+export type InkOp = { kind: 'add'; stroke: Stroke } | { kind: 'replace'; before: Stroke[]; after: Stroke[] };
 
 const LIMIT = 200;
 
 function apply(op: InkOp, strokes: Stroke[]): Stroke[] {
   if (op.kind === 'add') return [...strokes, op.stroke];
-  const ids = new Set(op.strokes.map(s => s.id));
-  return strokes.filter(s => !ids.has(s.id));
+  return [...op.after];
 }
 function revert(op: InkOp, strokes: Stroke[]): Stroke[] {
   if (op.kind === 'add') return strokes.filter(s => s.id !== op.stroke.id);
-  return [...strokes, ...op.strokes];
+  return [...op.before];
 }
 
 /** 元に戻す・やり直す。上限200手。新しい操作でやり直しは消える。 */

@@ -15,12 +15,14 @@ describe('history', () => {
     strokes = h.redo(strokes);
     expect(strokes.map(x => x.id)).toEqual(['a']);
   });
-  it('undo of erase restores removed strokes', () => {
+  it('undo of erase restores strokes in their original stacking order', () => {
     const h = new History();
     const all = [s('a'), s('b'), s('c')];
-    h.push({ kind: 'remove', strokes: [all[1]] });
-    const after = h.undo([all[0], all[2]]);
-    expect(after.map(x => x.id).sort()).toEqual(['a', 'b', 'c']);
+    const piece = s('b2');
+    const after = [all[0], all[2], piece];
+    h.push({ kind: 'replace', before: all, after });
+    expect(h.undo(after).map(x => x.id)).toEqual(['a', 'b', 'c']);
+    expect(h.redo(all).map(x => x.id)).toEqual(['a', 'c', 'b2']);
   });
   it('new op clears redo', () => {
     const h = new History();
