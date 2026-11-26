@@ -10,6 +10,7 @@
     "test": "vitest run"
   },
   "devDependencies": {
+    "@types/node": "^26.6.11",
     "fake-indexeddb": "^6.2.8",
     "jsdom": "^31.0.1",
     "typescript": "^7.0.2",

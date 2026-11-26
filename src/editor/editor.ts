@@ -1,7 +1,8 @@
 import type { Note, Page, Stroke, StrokePoint } from '../model/types';
 import { A4 } from '../model/types';
 import { newId } from '../model/ids';
-import { getNote, saveNote } from '../storage/db';
+import { getNote, getPdf, saveNote } from '../storage/db';
+import { openPdf, insertBlankPageAfter, visiblePageRange, type PdfDoc } from '../pdf/pdf-doc';
 import { History, type InkOp } from '../ink/history';
 import { attachInkInput, type InputState } from '../ink/input';
 import { drawPage, fillStroke } from '../ink/render';
@@ -51,6 +52,19 @@ export async function openEditor(root: HTMLElement, noteId: string, opts: Editor
   const loaded = await getNote(noteId);
   if (!loaded) throw new Error('ノートが見つかりません');
   const note: Note = loaded;
+
+  // PDFノート：PDFは下のキャンバスに、線は上の透明キャンバスに描く
+  let pdf: PdfDoc | null = null;
+  if (note.pdfId) {
+    const blob = await getPdf(note.pdfId);
+    if (blob) pdf = await openPdf(blob, { sizes: false });
+  }
+  const underlay = opts.underlay ?? (pdf ? {
+    render: (page: Page, c: HTMLCanvasElement, s: number) =>
+      page.source.type === 'pdf' ? pdf!.renderPage(page.source.pdfPage, c, s) : Promise.resolve(),
+  } : undefined);
+  const visibleRange = opts.visibleRange ?? visiblePageRange;
+  const addPageAt = opts.addPage ?? ((n: Note, i: number) => insertBlankPageAfter(n, i));
 
   root.replaceChildren();
   root.className = 'screen editor';
@@ -135,7 +149,8 @@ export async function openEditor(root: HTMLElement, noteId: string, opts: Editor
   function unmount(v: PageView) {
     v.detach?.();
     v.detach = null;
-    v.under?.remove(); v.ink?.remove();
+    // iPadのSafariはキャンバスの画素を早く手放さないとメモリが足りなくなる
+    for (const c of [v.under, v.ink]) if (c) { c.width = 0; c.height = 0; c.remove(); }
     v.under = null; v.ink = null;
   }
 
@@ -152,16 +167,16 @@ export async function openEditor(root: HTMLElement, noteId: string, opts: Editor
 
   function drawUnder(i: number) {
     const v = views[i], page = note.pages[i];
-    if (!v.under || !opts.underlay) return;
+    if (!v.under || !underlay) return;
     const ps = pixelScale(page, scale());
-    opts.underlay.render(page, v.under, ps).catch(() => { /* 範囲外で破棄された等 */ });
+    underlay.render(page, v.under, ps).catch(() => { /* 範囲外で破棄された等 */ });
   }
 
   function mount(i: number) {
     const v = views[i];
     if (v.ink) return;
     const page = note.pages[i];
-    if (page.source.type === 'pdf' && opts.underlay) {
+    if (page.source.type === 'pdf' && underlay) {
       v.under = document.createElement('canvas');
       v.under.className = 'layer under';
       v.el.append(v.under);
@@ -178,9 +193,7 @@ export async function openEditor(root: HTMLElement, noteId: string, opts: Editor
   function refreshRange() {
     cancelAnimationFrame(rangeFrame);
     rangeFrame = requestAnimationFrame(() => {
-      const [a, b] = opts.visibleRange
-        ? opts.visibleRange(scroller.scrollTop, scroller.clientHeight, tops, heights)
-        : [0, note.pages.length - 1];
+      const [a, b] = visibleRange(scroller.scrollTop, scroller.clientHeight, tops, heights);
       views.forEach((v, i) => { if (i < a || i > b) unmount(v); });
       for (let i = a; i <= b && i < views.length; i++) mount(i);
     });
@@ -281,13 +294,10 @@ export async function openEditor(root: HTMLElement, noteId: string, opts: Editor
 
   function addPage() {
     const i = currentIndex();
-    if (opts.addPage) {
-      const next = opts.addPage(note, i);
-      note.pages = next.pages;
-    } else {
-      note.pages.push({ id: newId(), source: { type: 'blank' }, width: A4.width, height: A4.height, strokes: [] });
-    }
+    note.pages = addPageAt(note, i).pages;
     buildViews();
+    // 足したページが見えるようにする
+    scroller.scrollTop = tops[Math.min(i + 1, tops.length - 1)] - PAGE_GAP;
     refreshRange();
     changed();
   }
@@ -356,5 +366,6 @@ export async function openEditor(root: HTMLElement, noteId: string, opts: Editor
     for (const v of views) unmount(v);
     await autosave.flush();
     autosave.dispose();
+    await pdf?.destroy();
   };
 }
