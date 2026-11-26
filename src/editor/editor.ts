@@ -376,7 +376,12 @@ export async function openEditor(root: HTMLElement, noteId: string, opts: Editor
       if (pinch.started) redrawAll();
       pinch = null;
     }
-    if (result) {
+    if (result === 'doubleTap') {
+      // 指1本で書ける間（Pencilを使う前）は、ダブルタップは点を2つ打つ操作なので切り替えない
+      if (!inputState.penSeen) return;
+      const t = toolbar.toggleEraser();
+      showToast(t === 'eraser' ? '消しゴム' : t === 'highlighter' ? '蛍光ペン' : 'ペン');
+    } else if (result) {
       const can = result === 'undo' ? history.canUndo() : history.canRedo();
       step(result);
       showToast(!can ? (result === 'undo' ? '戻せる操作がありません' : 'やり直せる操作がありません')

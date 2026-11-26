@@ -66,3 +66,42 @@ describe('TapGesture', () => {
     expect(g.end([3, 4], 1100)).toBe('undo');
   });
 });
+
+describe('TapGesture double tap', () => {
+  it('two quick one-finger taps → doubleTap', () => {
+    const g = new TapGesture();
+    g.start([f(1)], 0);
+    expect(g.end([1], 80)).toBeNull();
+    g.start([f(2, 105, 98)], 200);
+    expect(g.end([2], 270)).toBe('doubleTap');
+  });
+
+  it('a third tap starts over (no double-double)', () => {
+    const g = new TapGesture();
+    g.start([f(1)], 0); g.end([1], 60);
+    g.start([f(2)], 150); expect(g.end([2], 210)).toBe('doubleTap');
+    g.start([f(3)], 300); expect(g.end([3], 360)).toBeNull();
+  });
+
+  it('too slow or too far apart is not a double tap', () => {
+    const g = new TapGesture();
+    g.start([f(1)], 0); g.end([1], 60);
+    g.start([f(2)], 600); expect(g.end([2], 660)).toBeNull();
+    const h = new TapGesture();
+    h.start([f(1)], 0); h.end([1], 60);
+    h.start([f(2, 300, 100)], 150); expect(h.end([2], 210)).toBeNull();
+  });
+
+  it('a scroll in between breaks it', () => {
+    const g = new TapGesture();
+    g.start([f(1)], 0); g.end([1], 60);
+    g.start([f(2)], 120); g.move([f(2, 100, 160)]); g.end([2], 180);
+    g.start([f(3)], 240); expect(g.end([3], 300)).toBeNull();
+  });
+
+  it('Pencil taps never count', () => {
+    const g = new TapGesture();
+    g.start([f(1, 100, 100, true)], 0); g.end([1], 60);
+    g.start([f(2, 100, 100, true)], 150); expect(g.end([2], 210)).toBeNull();
+  });
+});

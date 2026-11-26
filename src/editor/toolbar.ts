@@ -34,6 +34,8 @@ export interface Toolbar {
   el: HTMLElement;
   state: ToolState;
   setHistory(canUndo: boolean, canRedo: boolean): void;
+  /** 消しゴム⇔直前のペン（または蛍光ペン）を切り替える。切り替え後の道具を返す */
+  toggleEraser(): Tool;
 }
 
 function button(label: string, title: string, onClick: () => void, cls = ''): HTMLButtonElement {
@@ -172,7 +174,7 @@ export function createToolbar(opts: {
 
   const toolBtns: Record<Exclude<Tool, 'pen'>, HTMLButtonElement> = {
     highlighter: button('蛍光', '蛍光ペン', () => select('highlighter')),
-    eraser: button('消', '消しゴム', () => select('eraser')),
+    eraser: button('消', '消しゴム（もう一度押すとペンに戻る）', () => toggleEraser()),
   };
 
   const eraserBtns = ERASER_MODES.map(m => {
@@ -222,7 +224,14 @@ export function createToolbar(opts: {
     sizeText.textContent = sizeLabel(pen.size);
     delBtn.disabled = pens.length <= 1;
   }
+  // 消しゴムから戻る先
+  let lastDrawTool: Exclude<Tool, 'eraser'> = 'pen';
+  function toggleEraser(): Tool {
+    select(state.tool === 'eraser' ? lastDrawTool : 'eraser');
+    return state.tool;
+  }
   function select(t: Tool) {
+    if (t !== 'eraser') lastDrawTool = t;
     state.tool = t;
     if (t !== 'pen') closePanel();
     refresh();
@@ -232,5 +241,6 @@ export function createToolbar(opts: {
   return {
     el, state,
     setHistory(canUndo, canRedo) { undo.disabled = !canUndo; redo.disabled = !canRedo; },
+    toggleEraser,
   };
 }
