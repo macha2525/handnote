@@ -36,6 +36,9 @@ export class History {
     this.done.push(op);
     return apply(op, strokes);
   }
+  /** 次に戻す操作（どのページの操作かを編集画面が調べるため） */
+  peekUndo(): InkOp | undefined { return this.done[this.done.length - 1]; }
+  peekRedo(): InkOp | undefined { return this.undone[this.undone.length - 1]; }
   canUndo(): boolean { return this.done.length > 0; }
   canRedo(): boolean { return this.undone.length > 0; }
 }

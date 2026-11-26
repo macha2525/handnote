@@ -1,0 +1,37 @@
+* { box-sizing: border-box; }
+html, body, #app { height: 100%; }
+body { overscroll-behavior: none; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+button { font: inherit; color: inherit; }
+
+.screen { height: 100%; display: flex; flex-direction: column; }
+
+/* ---- 道具バー ---- */
+.toolbar {
+  display: flex; align-items: center; gap: 4px; flex-wrap: wrap;
+  padding: 4px 8px; padding-top: max(4px, env(safe-area-inset-top));
+  background: var(--desk); border-bottom: 1px solid var(--rule);
+}
+.tb-btn {
+  min-height: 36px; padding: 0 10px; border: 1px solid var(--rule);
+  border-radius: var(--radius-btn); background: var(--paper); font-size: 14px;
+}
+.tb-btn.is-on { background: var(--marker); border-color: var(--ink); }
+.tb-btn:disabled { opacity: 0.4; }
+.tb-swatch { width: 32px; padding: 0; }
+.tb-swatch::after { content: ''; display: block; width: 16px; height: 16px; margin: auto; border-radius: 50%; background: var(--swatch); }
+.tb-size { min-width: 36px; padding: 0 6px; }
+.tb-title { font-weight: 700; padding: 0 8px; max-width: 30ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tb-sep { width: 1px; height: 24px; background: var(--rule); margin: 0 4px; }
+
+.save-error {
+  padding: 8px 16px; background: var(--paper); color: var(--redpen);
+  border-bottom: 2px solid var(--redpen); font-weight: 700;
+}
+
+/* ---- ページ ---- */
+.pages { flex: 1; overflow: auto; background: var(--desk); -webkit-overflow-scrolling: touch; }
+.pages-inner { width: max-content; min-width: 100%; padding: 16px; display: flex; flex-direction: column; align-items: center; gap: 16px; }
+.page { position: relative; background: var(--paper); box-shadow: 0 0 0 1px var(--rule); border-radius: 0; flex: none; }
+.layer { position: absolute; inset: 0; width: 100%; height: 100%; }
+.layer.under, .layer.ink { pointer-events: none; }
+.layer.live { pointer-events: none; }

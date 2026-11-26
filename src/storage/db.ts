@@ -61,6 +61,8 @@ export async function listNotebooks(): Promise<Notebook[]> {
 }
 
 export async function saveSection(s: Section): Promise<void> { await put('sections', s); }
+export async function getSection(id: string): Promise<Section | undefined> { return (await db()).get("sections", id); }
+export async function getNotebook(id: string): Promise<Notebook | undefined> { return (await db()).get("notebooks", id); }
 export async function listSections(notebookId: string): Promise<Section[]> {
   const all = await (await db()).getAllFromIndex('sections', 'notebookId', notebookId);
   return all.sort((a, b) => a.order - b.order);
