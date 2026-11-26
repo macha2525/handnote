@@ -213,6 +213,11 @@ export async function openEditor(root: HTMLElement, noteId: string, opts: Editor
     let erased: Stroke[] = [];
     let ps = 1;
 
+    let liveFrame = 0;
+    // Apple Pencil は1秒に最大240回点が来るので、描き直しは画面の更新1回につき1回にまとめる
+    const scheduleLive = () => {
+      if (!liveFrame) liveFrame = requestAnimationFrame(() => { liveFrame = 0; drawLive(); });
+    };
     const drawLive = () => {
       if (!live || !liveCanvas) return;
       const ctx = liveCanvas.getContext('2d');
@@ -252,12 +257,13 @@ export async function openEditor(root: HTMLElement, noteId: string, opts: Editor
         if (toolbar.state.tool === 'eraser' && !live) { erase(p); return; }
         if (!live) return;
         live.points.push(p);
-        drawLive();
+        scheduleLive();
       },
       onStrokeEnd() {
         if (live) {
           const s = live;
           live = null;
+          if (liveFrame) { cancelAnimationFrame(liveFrame); liveFrame = 0; }
           liveCanvas?.remove(); liveCanvas = null;
           note.pages[i].strokes.push(s);
           const op: InkOp = { kind: 'add', stroke: s };

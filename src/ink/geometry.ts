@@ -1,16 +1,17 @@
 import { getStroke } from 'perfect-freehand';
 import type { Stroke, StrokePoint } from '../model/types';
+import { cleanPoints } from './smooth';
 
 /** 線の外形（ページ座標）。ペンは筆圧で太さが変わり、蛍光ペンは一定の太さ。 */
 export function strokeOutline(stroke: Stroke): [number, number][] {
   const hl = stroke.tool === 'highlighter';
-  const input = stroke.points.map(pt => [pt.x, pt.y, hl ? 0.5 : pt.p]);
+  const input = cleanPoints(stroke.points).map(pt => [pt.x, pt.y, hl ? 0.5 : pt.p]);
   return getStroke(input, {
     size: stroke.size,
     simulatePressure: false,
-    thinning: hl ? 0 : 0.6,
+    thinning: hl ? 0 : 0.5,
     smoothing: 0.5,
-    streamline: 0.4,
+    streamline: 0.5,
     last: true,
   }) as [number, number][];
 }
