@@ -25,3 +25,24 @@ describe('decidePointer', () => {
     expect(decidePointer(ev('touch', false), { penSeen: false })).not.toBe('draw');
   });
 });
+
+describe('attachInkInput touch-action', () => {
+  function down(el: HTMLElement, pointerType: string) {
+    const e = new Event('pointerdown', { bubbles: true, cancelable: true }) as Event & Record<string, unknown>;
+    Object.assign(e, { pointerType, isPrimary: true, pointerId: 1, button: 0, clientX: 0, clientY: 0, pressure: 0.5 });
+    el.dispatchEvent(e);
+  }
+  const noop = { getScale: () => 1, onStrokeStart() {}, onStrokeMove() {}, onStrokeEnd() {} };
+
+  it('switches every attached page to scrolling once a pen is seen', async () => {
+    const { attachInkInput } = await import('../../src/ink/input');
+    const state: InputState = { penSeen: false };
+    const a = document.createElement('div'), b = document.createElement('div');
+    attachInkInput(a, { ...noop, state });
+    attachInkInput(b, { ...noop, state });
+    expect(b.style.touchAction).toBe('none');
+    down(a, 'pen');
+    expect(a.style.touchAction).toBe('pan-x pan-y');
+    expect(b.style.touchAction).toBe('pan-x pan-y');
+  });
+});

@@ -3,6 +3,8 @@
 html, body, #app { height: 100%; }
 body { overscroll-behavior: none; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
 button { font: inherit; color: inherit; }
+/* iPadのSafariでは user-select: none の中の入力欄に文字を打てなくなることがあるので戻す */
+input, textarea { -webkit-user-select: text; user-select: text; }
 
 .screen { height: 100%; display: flex; flex-direction: column; }
 

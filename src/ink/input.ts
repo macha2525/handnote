@@ -24,7 +24,10 @@ export function decidePointer(
   }
 }
 
-const NAV_TOUCH_ACTION = 'pan-x pan-y pinch-zoom';
+// 拡大・縮小は編集画面が自分で行う（ブラウザに任せると道具バーごと拡大される）
+const NAV_TOUCH_ACTION = 'pan-x pan-y';
+/** 同じ状態を共有するページ。ペンを検知したら全部まとめてスクロール用に切り替える */
+const attached = new WeakMap<InputState, Set<HTMLElement>>();
 
 export function attachInkInput(el: HTMLElement, opts: {
   getScale(): number;
@@ -37,6 +40,9 @@ export function attachInkInput(el: HTMLElement, opts: {
   const state = opts.state ?? { penSeen: false };
   let active: number | null = null;
   el.style.touchAction = state.penSeen ? NAV_TOUCH_ACTION : 'none';
+  if (!attached.has(state)) attached.set(state, new Set());
+  const group = attached.get(state)!;
+  group.add(el);
 
   const point = (e: PointerEvent): StrokePoint => {
     const r = el.getBoundingClientRect();
@@ -52,7 +58,7 @@ export function attachInkInput(el: HTMLElement, opts: {
   const down = (e: PointerEvent) => {
     if (e.pointerType === 'mouse' && e.button !== 0) return;
     const d = decidePointer(e, state);
-    if (state.penSeen) el.style.touchAction = NAV_TOUCH_ACTION;
+    if (state.penSeen) for (const g of group) g.style.touchAction = NAV_TOUCH_ACTION;
     if (d !== 'draw') {
       // 指で書いている最中に2本目の指が来たら、拡大とみなして線を終える
       if (active !== null && e.pointerType === 'touch') end();
@@ -86,6 +92,7 @@ export function attachInkInput(el: HTMLElement, opts: {
   el.addEventListener('touchstart', touchStart, { passive: false });
   el.addEventListener('touchmove', touchStart, { passive: false });
   return () => {
+    group.delete(el);
     el.removeEventListener('pointerdown', down);
     el.removeEventListener('pointermove', move);
     el.removeEventListener('pointerup', up);
