@@ -2,6 +2,8 @@ import type { Notebook, NotebookKind } from '../model/types';
 import { newId } from '../model/ids';
 import { listNotebooks, saveNotebook } from '../storage/db';
 import { NOTEBOOK_COLORS, spineTone } from './labels';
+import { cleanTitle, TITLE_MAX } from './title';
+import { icon } from '../ui/icons';
 
 export function el<K extends keyof HTMLElementTagNameMap>(tag: K, cls = '', text = ''): HTMLElementTagNameMap[K] {
   const e = document.createElement(tag);
@@ -15,6 +17,52 @@ export function btn(label: string, onClick: () => void, cls = 'btn'): HTMLButton
   b.type = 'button';
   b.addEventListener('click', onClick);
   return b;
+}
+
+/** 鉛筆アイコンの小さなボタン（名前を変える） */
+export function renameBtn(label: string, onClick: () => void): HTMLButtonElement {
+  const b = btn('', onClick, 'btn btn-icon');
+  b.setAttribute('aria-label', label);
+  b.title = label;
+  b.append(icon('pencil'));
+  return b;
+}
+
+/** 名前を入力してもらう。決定したら整えた名前、やめたら null */
+export function askTitle(root: HTMLElement, opts: { title: string; label: string; value: string }): Promise<string | null> {
+  return new Promise(resolve => {
+    const dlg = el('dialog', 'dialog glass');
+    const form = el('form');
+    form.method = 'dialog';
+    const field = el('label', 'field');
+    const input = el('input');
+    input.value = opts.value;
+    input.maxLength = TITLE_MAX;
+    input.required = true;
+    input.enterKeyHint = 'done';
+    field.append(el('span', '', opts.label), input);
+    const note = el('p', 'dialog-message');
+    note.setAttribute('role', 'status');
+    const actions = el('div', 'actions');
+    const ok = el('button', 'btn btn-primary', '決定');
+    ok.type = 'submit';
+    actions.append(ok, btn('やめる', () => dlg.close()));
+    form.append(el('h2', '', opts.title), field, note, actions);
+    let result: string | null = null;
+    form.addEventListener('submit', e => {
+      e.preventDefault();
+      const t = cleanTitle(input.value);
+      if (!t) { note.textContent = '名前を入れてください'; input.focus(); return; }
+      result = t;
+      dlg.close();
+    });
+    dlg.addEventListener('close', () => { dlg.remove(); resolve(result); });
+    dlg.append(form);
+    root.append(dlg);
+    dlg.showModal();
+    input.focus();
+    input.select();
+  });
 }
 
 /** 削除などの確認。「削除する」を押したら true */
@@ -71,7 +119,7 @@ export async function openShelf(root: HTMLElement, nav: { openNotebook(id: strin
     titleLabel.append(el('span', '', '科目名'));
     const title = el('input');
     title.required = true;
-    title.maxLength = 60;
+    title.maxLength = TITLE_MAX;
     title.placeholder = '例：統計学入門';
     titleLabel.append(title);
 

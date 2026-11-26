@@ -2,12 +2,12 @@ import type { Background, Note, Section } from '../model/types';
 import { A4 } from '../model/types';
 import { newId } from '../model/ids';
 import {
-  deleteNote, deleteNotebook, deleteSection, getNotebook, listNotes, listSections, saveNote, saveSection,
+  deleteNote, deleteNotebook, deleteSection, getNotebook, listNotes, listSections, saveNote, saveNotebook, saveSection,
   StorageFullError,
 } from '../storage/db';
 import { createPdfNote } from '../pdf/pdf-doc';
 import { nextSectionLabel, spineTone } from './labels';
-import { btn, confirmDanger, el } from './shelf';
+import { askTitle, btn, confirmDanger, el, renameBtn } from './shelf';
 
 const BACKGROUNDS: { value: Background; name: string }[] = [
   { value: 'plain', name: '無地' },
@@ -49,9 +49,11 @@ export async function openNotebookView(root: HTMLElement, notebookId: string, na
   header.style.setProperty('--bg', spineTone(nb.color).bg);
   header.style.setProperty('--fg', spineTone(nb.color).text);
   const unit = nb.kind === 'lecture' ? '回' : '章';
+  const heading = el('h1', 'bar-title', nb.title);
   header.append(
     btn('本棚に戻る', nav.openShelf),
-    el('h1', 'bar-title', nb.title),
+    heading,
+    renameBtn('ノートブックの名前を変える', () => renameNotebook()),
     btn(`${unit}を足す`, () => addSection(), 'btn btn-primary'),
     btn('ノートブックを削除', () => removeNotebook(), 'btn btn-danger-quiet'),
   );
@@ -93,6 +95,45 @@ export async function openNotebookView(root: HTMLElement, notebookId: string, na
     sections = [...sections, s];
     await render();
     list.lastElementChild?.scrollIntoView({ block: 'nearest' });
+  }
+
+  async function renameNotebook() {
+    const t = await askTitle(root, { title: 'ノートブックの名前を変える', label: '科目名', value: nb!.title });
+    if (!t || t === nb!.title) return;
+    try {
+      await saveNotebook({ ...nb!, title: t });
+    } catch (e) {
+      status.textContent = (e as Error).message;
+      return;
+    }
+    nb!.title = t;
+    heading.textContent = t;
+  }
+
+  async function renameSection(s: Section) {
+    const t = await askTitle(root, { title: `${s.label}の名前を変える`, label: '名前', value: s.label });
+    if (!t || t === s.label) return;
+    const next = { ...s, label: t };
+    try {
+      await saveSection(next);
+    } catch (e) {
+      status.textContent = (e as Error).message;
+      return;
+    }
+    sections = sections.map(x => (x.id === s.id ? next : x));
+    await render();
+  }
+
+  async function renameNote(n: Note) {
+    const t = await askTitle(root, { title: 'ノートの名前を変える', label: '名前', value: n.title });
+    if (!t || t === n.title) return;
+    try {
+      await saveNote({ ...n, title: t });
+    } catch (e) {
+      status.textContent = (e as Error).message;
+      return;
+    }
+    await render();
   }
 
   async function removeNotebook() {
@@ -157,7 +198,9 @@ export async function openNotebookView(root: HTMLElement, notebookId: string, na
 
   async function sectionRow(s: Section): Promise<HTMLElement> {
     const row = el('section', 'section-row glass');
-    row.append(el('h2', 'section-label', s.label));
+    const head = el('div', 'section-head');
+    head.append(el('h2', 'section-label', s.label), renameBtn(`${s.label}の名前を変える`, () => renameSection(s)));
+    row.append(head);
 
     const notes = await listNotes(s.id);
     const ul = el('ul', 'note-list');
@@ -165,7 +208,7 @@ export async function openNotebookView(root: HTMLElement, notebookId: string, na
       const li = el('li', 'note-item');
       const del = btn('削除', () => removeNote(n), 'btn btn-small btn-danger-quiet');
       del.setAttribute('aria-label', `${n.title}を削除`);
-      li.append(btn(n.title, () => nav.openNote(n.id), 'note-link'), del);
+      li.append(btn(n.title, () => nav.openNote(n.id), 'note-link'), renameBtn(`${n.title}の名前を変える`, () => renameNote(n)), del);
       ul.append(li);
     }
     row.append(ul);

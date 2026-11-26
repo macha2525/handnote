@@ -62,7 +62,8 @@ h1, h2, h3 { font-family: var(--font-display); font-weight: 700; letter-spacing:
 .tb-swatch { width: 32px; padding: 0; }
 .tb-swatch::after { content: ''; display: block; width: 16px; height: 16px; margin: auto; border-radius: 50%; background: var(--swatch); box-shadow: 0 0 0 1px rgb(255 255 255 / 0.25); }
 .tb-size { min-width: 36px; padding: 0 10px; }
-.tb-title { font-family: var(--font-display); font-weight: 700; letter-spacing: 0.06em; font-size: 16px; padding: 0 10px; max-width: 24ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tb-title { min-height: 40px; border: 0; border-radius: var(--radius-pill); background: transparent; color: var(--on-glass); cursor: pointer; font-family: var(--font-display); font-weight: 700; letter-spacing: 0.06em; font-size: 16px; padding: 0 10px; max-width: 24ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tb-title:hover { background: var(--glass-soft-hover); }
 .tb-sep { width: 1px; height: 22px; background: var(--glass-edge); margin: 0 4px; }
 
 .save-error {
@@ -89,7 +90,7 @@ h1, h2, h3 { font-family: var(--font-display); font-weight: 700; letter-spacing:
   min-height: 60px; padding: 8px 10px 8px 12px; border-radius: 30px;
   display: flex; align-items: center; gap: 8px; flex: none;
 }
-.bar-title { font-size: 20px; margin: 0 0 0 6px; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bar-title { font-size: 20px; margin: 0 0 0 6px; flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .notebook .bar-title::before { /* ノートブックの色の小さな背表紙 */
   content: ''; display: inline-block; width: 8px; height: 22px; margin-right: 12px; vertical-align: -3px;
   border-radius: 3px; background: var(--bg); box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.4);
@@ -104,6 +105,11 @@ h1, h2, h3 { font-family: var(--font-display); font-weight: 700; letter-spacing:
 .btn-danger { background: var(--danger-fill); border-color: var(--danger-fill); color: #fff; font-weight: 600; }
 .btn-danger:hover { background: var(--danger-fill); filter: brightness(1.12); }
 .btn-danger-quiet { color: var(--danger); border-color: rgb(242 160 168 / 0.35); }
+.bar .btn-primary { margin-left: auto; }
+.btn-icon { width: 42px; padding: 0; display: inline-grid; place-items: center; }
+.btn-icon svg { width: 18px; height: 18px; }
+.note-item .btn-icon { width: 34px; min-height: 34px; }
+.section-head { display: flex; align-items: center; gap: 10px; }
 .btn-small { min-height: 34px; padding: 0 12px; font-size: 13px; }
 .dialog-message { margin: 0 0 18px; line-height: 1.8; color: var(--on-glass-muted); }
 .btn:active, .tb-btn:active, .spine:active { transform: translateY(1px); }

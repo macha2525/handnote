@@ -9,6 +9,7 @@ import { drawPage, fillStroke } from '../ink/render';
 import { eraseAt, erasePartAt } from '../ink/eraser';
 import { createAutosave } from './autosave';
 import { TapGesture, type TapTouch } from './tap-gesture';
+import { askTitle } from '../shelf/shelf';
 import { createToolbar, HIGHLIGHTER, ERASER_RADIUS } from './toolbar';
 
 const MIN_ZOOM = 0.5;
@@ -94,6 +95,13 @@ export async function openEditor(root: HTMLElement, noteId: string, opts: Editor
     onRedo: () => step('redo'),
     onAddPage: () => addPage(),
     onImportPdf: f => opts.onImportPdf(f, note),
+    onRename: async () => {
+      const t = await askTitle(root, { title: 'ノートの名前を変える', label: '名前', value: note.title });
+      if (!t || t === note.title) return;
+      note.title = t;
+      toolbar.setTitle(t);
+      changed();
+    },
   });
 
   const scroller = document.createElement('div');

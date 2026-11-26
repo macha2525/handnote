@@ -35,6 +35,7 @@ export interface Toolbar {
   el: HTMLElement;
   state: ToolState;
   setHistory(canUndo: boolean, canRedo: boolean): void;
+  setTitle(title: string): void;
   /** 消しゴム⇔直前のペン（または蛍光ペン）を切り替える。切り替え後の道具を返す */
   toggleEraser(): Tool;
 }
@@ -63,6 +64,8 @@ export function createToolbar(opts: {
   onRedo(): void;
   onAddPage(): void;
   onImportPdf(file: File): void;
+  /** 題名をタップしたとき（ノートの名前を変える） */
+  onRename?(): void;
 }): Toolbar {
   let pens = loadPens();
   let penId = pens.some(p => p.id === loadPenId()) ? loadPenId()! : pens[0].id;
@@ -72,9 +75,7 @@ export function createToolbar(opts: {
   el.className = 'toolbar glass';
 
   const back = iconButton('back', '本棚に戻る', opts.onBack, 'tb-back');
-  const title = document.createElement('span');
-  title.className = 'tb-title';
-  title.textContent = opts.title;
+  const title = button(opts.title, 'ノートの名前を変える', () => opts.onRename?.(), 'tb-title');
 
   // ---- ペン立て ----
   const penRack = document.createElement('span');
@@ -249,5 +250,6 @@ export function createToolbar(opts: {
     el, state,
     setHistory(canUndo, canRedo) { undo.disabled = !canUndo; redo.disabled = !canRedo; },
     toggleEraser,
+    setTitle(t) { title.textContent = t; },
   };
 }
