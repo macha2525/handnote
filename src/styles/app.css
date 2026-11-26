@@ -120,17 +120,36 @@ h1, h2, h3 { font-family: var(--font-display); font-weight: 700; letter-spacing:
 
 /* ---- 本棚 ---- */
 .shelf-body { flex: 1; overflow: auto; }
-.spines { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: flex-start; gap: 12px; padding: 32px max(24px, env(safe-area-inset-left)); }
-.spine {
-  position: relative; width: 58px; height: 248px; padding: 16px 0; border: 1px solid rgb(255 255 255 / 0.22); border-radius: 12px 12px 8px 8px;
-  background: var(--bg); /* color-mix が使えない古い Safari 向け */
-  background: color-mix(in srgb, var(--bg) 78%, transparent); color: var(--fg);
-  -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.45), inset -4px 0 0 rgb(0 0 0 / 0.12), 0 12px 26px var(--glass-shadow);
-  display: flex; justify-content: center; align-items: flex-start; cursor: pointer;
+.spines {
+  display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: flex-start; column-gap: 8px; row-gap: 30px;
+  padding: 32px max(24px, env(safe-area-inset-left)) 40px;
+  /* 本の下に棚板（ガラスの板）。本の高さ262px＋段の間30pxごとにくり返す */
+  background: repeating-linear-gradient(180deg, transparent 0 262px, rgb(220 230 255 / 0.28) 262px 263px, rgb(220 230 255 / 0.12) 263px 276px, transparent 276px 292px);
+  background-position: 0 32px; background-origin: border-box; background-clip: padding-box;
 }
-.spine::before { content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; background: linear-gradient(180deg, rgb(255 255 255 / 0.18), transparent 35%); }
-.spine-title { font-family: var(--font-display); writing-mode: vertical-rl; font-size: 17px; font-weight: 700; letter-spacing: 0.14em; max-height: 216px; overflow: hidden; }
+/* 革装の背表紙 */
+.spine {
+  position: relative; width: 60px; height: 262px; padding: 0; border: 0; border-radius: 7px 7px 4px 4px;
+  background:
+    linear-gradient(90deg, rgb(0 0 0 / 0.5), rgb(255 255 255 / 0.13) 30%, rgb(255 255 255 / 0.05) 55%, rgb(0 0 0 / 0.5)),
+    repeating-linear-gradient(35deg, rgb(255 255 255 / 0.025) 0 2px, transparent 2px 5px),
+    var(--bg);
+  box-shadow: 0 12px 24px rgb(0 0 0 / 0.5);
+  cursor: pointer; color: #E9D3A0;
+}
+.spine-rib {
+  position: absolute; left: 0; right: 0; height: 7px;
+  background: linear-gradient(180deg, rgb(255 255 255 / 0.18), rgb(0 0 0 / 0.35));
+  border-top: 1px solid rgb(201 168 106 / 0.7); border-bottom: 1px solid rgb(201 168 106 / 0.7);
+}
+.spine-rib.r1 { top: 18px; } .spine-rib.r2 { top: 184px; } .spine-rib.r3 { top: 214px; }
+.spine-panel {
+  position: absolute; top: 32px; left: 9px; right: 9px; height: 146px; padding: 9px 0;
+  background: rgb(0 0 0 / 0.38); border-top: 1px solid var(--brass); border-bottom: 1px solid var(--brass);
+  display: flex; justify-content: center; overflow: hidden;
+}
+.spine-title { font-family: var(--font-display); writing-mode: vertical-rl; font-size: 14px; font-weight: 700; letter-spacing: 0.06em; color: #E9D3A0; max-height: 128px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.spine-orn { position: absolute; left: 0; right: 0; bottom: 26px; text-align: center; font-size: 12px; color: #E9D3A0; text-shadow: 0 1px 2px rgb(0 0 0 / 0.6); }
 .spine:focus-visible { outline: 2px solid var(--brass); outline-offset: 3px; }
 
 .dialog { position: fixed; padding: 24px; width: min(440px, 92vw); border-radius: var(--radius-panel); }

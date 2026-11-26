@@ -181,6 +181,12 @@ function spine(nb: Notebook, onOpen: () => void): HTMLButtonElement {
   b.style.setProperty('--bg', spineTone(nb.color).bg);
   b.style.setProperty('--fg', spineTone(nb.color).text);
   b.setAttribute('aria-label', `${nb.title}を開く`);
-  b.append(el('span', 'spine-title', nb.title));
+  // 革装：背バンド（盛り上がった筋）、黒い枠に金の題、下に小さな飾り
+  const panel = el('span', 'spine-panel');
+  panel.append(el('span', 'spine-title', nb.title));
+  const rib = (cls: string) => { const r = el('span', 'spine-rib ' + cls); r.setAttribute('aria-hidden', 'true'); return r; };
+  const orn = el('span', 'spine-orn', '✦');
+  orn.setAttribute('aria-hidden', 'true');
+  b.append(rib('r1'), panel, rib('r2'), rib('r3'), orn);
   return b;
 }
