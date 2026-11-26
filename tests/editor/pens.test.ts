@@ -48,3 +48,34 @@ describe('pens', () => {
     expect(out[1]).toBe(pens[1]);
   });
 });
+
+import { HIGHLIGHTER_RACK, PEN_RACK } from '../../src/editor/pens';
+
+describe('highlighter rack', () => {
+  it('starts with four highlighters in light colors and thick sizes', () => {
+    const hl = parsePens(null, HIGHLIGHTER_RACK);
+    expect(hl).toHaveLength(4);
+    for (const h of hl) expect(h.size).toBeGreaterThanOrEqual(HIGHLIGHTER_RACK.sizeMin);
+    expect(hl[0].color).toBe('#F2D35B');
+  });
+  it('uses its own size range and step', () => {
+    expect(clampSize(3, HIGHLIGHTER_RACK)).toBe(HIGHLIGHTER_RACK.sizeMin);
+    expect(clampSize(99, HIGHLIGHTER_RACK)).toBe(HIGHLIGHTER_RACK.sizeMax);
+    expect(clampSize(14.4, HIGHLIGHTER_RACK)).toBe(14);
+    expect(HIGHLIGHTER_RACK.sizeMin).toBe(6);
+    expect(HIGHLIGHTER_RACK.sizeMax).toBe(30);
+  });
+  it('holds at most six highlighters', () => {
+    let hl = parsePens(null, HIGHLIGHTER_RACK);
+    for (let i = 0; i < 5; i++) hl = addPen(hl, hl[0], HIGHLIGHTER_RACK);
+    expect(hl).toHaveLength(6);
+  });
+  it('updates with highlighter size rules', () => {
+    const hl = parsePens(null, HIGHLIGHTER_RACK);
+    expect(updatePen(hl, hl[0].id, { size: 1 }, HIGHLIGHTER_RACK)[0].size).toBe(6);
+  });
+  it('pen and highlighter racks are stored separately', () => {
+    expect(PEN_RACK.key).not.toBe(HIGHLIGHTER_RACK.key);
+    expect(PEN_RACK.idKey).not.toBe(HIGHLIGHTER_RACK.idKey);
+  });
+});

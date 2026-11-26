@@ -10,7 +10,7 @@ import { eraseAt, erasePartAt } from '../ink/eraser';
 import { createAutosave } from './autosave';
 import { TapGesture, type TapTouch } from './tap-gesture';
 import { askTitle } from '../shelf/shelf';
-import { createToolbar, HIGHLIGHTER, ERASER_RADIUS } from './toolbar';
+import { createToolbar, ERASER_RADIUS } from './toolbar';
 
 const MIN_ZOOM = 0.5;
 const MAX_ZOOM = 3;
@@ -264,7 +264,7 @@ export async function openEditor(root: HTMLElement, noteId: string, opts: Editor
         ps = pixelScale(page, scale());
         live = t.tool === 'pen'
           ? { id: newId(), tool: 'pen', color: t.penColor, size: t.penSize, points: [p] }
-          : { id: newId(), tool: 'highlighter', color: HIGHLIGHTER.color, size: HIGHLIGHTER.size, points: [p] };
+          : { id: newId(), tool: 'highlighter', color: t.hlColor, size: t.hlSize, points: [p] };
         liveCanvas = document.createElement('canvas');
         liveCanvas.className = 'layer live';
         sizeCanvas(liveCanvas, page, ps);
@@ -435,6 +435,17 @@ export async function openEditor(root: HTMLElement, noteId: string, opts: Editor
     redrawAll();
   });
   ro.observe(scroller);
+  // 道具バーが2段に折り返したら、1枚目の紙をそのぶん下げる
+  let lastBarH = 0;
+  const barRo = new ResizeObserver(() => {
+    const h = toolbar.el.offsetHeight;
+    if (!h || h === lastBarH) return;
+    lastBarH = h;
+    scroller.style.setProperty('--tb-h', `${h}px`);
+    layout();
+    refreshRange();
+  });
+  barRo.observe(toolbar.el);
 
   buildViews();
   toolbar.setHistory(false, false);
@@ -442,6 +453,7 @@ export async function openEditor(root: HTMLElement, noteId: string, opts: Editor
 
   return async () => {
     ro.disconnect();
+    barRo.disconnect();
     cancelAnimationFrame(rangeFrame);
     for (const v of views) unmount(v);
     await autosave.flush();

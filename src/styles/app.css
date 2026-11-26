@@ -76,7 +76,7 @@ h1, h2, h3 { font-family: var(--font-display); font-weight: 700; letter-spacing:
 .pages { position: relative; touch-action: pan-x pan-y; flex: 1; overflow: auto; background: transparent; -webkit-overflow-scrolling: touch; }
 .pages-inner {
   width: max-content; min-width: 100%; padding: 16px;
-  padding-top: calc(max(10px, env(safe-area-inset-top)) + 56px + 24px);
+  padding-top: calc(max(10px, env(safe-area-inset-top)) + var(--tb-h, 56px) + 24px);
   display: flex; flex-direction: column; align-items: center; gap: 16px;
 }
 .page { position: relative; background: var(--paper); border-radius: 2px; flex: none; box-shadow: 0 18px 40px rgb(0 0 0 / 0.35), 0 2px 6px rgb(0 0 0 / 0.25); }
@@ -169,6 +169,9 @@ h1, h2, h3 { font-family: var(--font-display); font-weight: 700; letter-spacing:
 .tb-pen { width: 40px; padding: 0; display: grid; place-items: center; }
 .tb-pen::after { content: ''; width: var(--dot); height: var(--dot); border-radius: 50%; background: var(--swatch); box-shadow: 0 0 0 1px rgb(255 255 255 / 0.3); }
 .tb-pen.is-on::after { box-shadow: 0 0 0 2px var(--on-brass); }
+/* 蛍光ペン：ペン先の形（平たい四角）を半透明で */
+.tb-hl::after { width: 12px; height: var(--dot); border-radius: 3px; opacity: 0.85; transform: rotate(-20deg); }
+.tb-hl.is-on::after { box-shadow: 0 0 0 2px var(--on-brass); opacity: 1; }
 .tb-swatch.is-on { background: var(--brass); }
 .pen-panel {
   position: absolute; top: calc(100% + 8px); left: 0; z-index: 20;

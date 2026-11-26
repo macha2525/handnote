@@ -1,12 +1,12 @@
-import { MARKER } from '../model/colors';
 import { icon, type IconName } from '../ui/icons';
+import { HIGHLIGHTER_ALPHA } from '../ink/render';
 import {
-  addPen, loadPens, MAX_PENS, PALETTE, removePen, savePens, SIZE_MAX, SIZE_MIN, SIZE_STEP, updatePen, type Pen,
+  addPen, HIGHLIGHTER_RACK, loadPenId, loadPens, PEN_RACK, removePen, savePenId, savePens, updatePen,
+  type Pen, type RackDef,
 } from './pens';
 
 export type Tool = 'pen' | 'highlighter' | 'eraser';
 
-export const HIGHLIGHTER = { color: MARKER, size: 14 };
 export const ERASER_RADIUS = 10;
 
 export type EraserMode = 'stroke' | 'part';
@@ -14,7 +14,12 @@ export const ERASER_MODES: { value: EraserMode; name: string; title: string }[] 
   { value: 'stroke', name: '線ごと', title: '消しゴム：触れた線をまるごと消す' },
   { value: 'part', name: '部分', title: '消しゴム：触れたところだけ消す' },
 ];
-export interface ToolState { tool: Tool; penColor: string; penSize: number; eraserMode: EraserMode; }
+export interface ToolState {
+  tool: Tool;
+  penColor: string; penSize: number;
+  hlColor: string; hlSize: number;
+  eraserMode: EraserMode;
+}
 
 const ERASER_MODE_KEY = 'handnote.eraserMode';
 function loadEraserMode(): EraserMode {
@@ -23,12 +28,12 @@ function loadEraserMode(): EraserMode {
 function saveEraserMode(m: EraserMode): void {
   try { localStorage.setItem(ERASER_MODE_KEY, m); } catch { /* 保存できなくても動く */ }
 }
-const PEN_ID_KEY = 'handnote.penId';
-function loadPenId(): string | null { try { return localStorage.getItem(PEN_ID_KEY); } catch { return null; } }
-function savePenId(id: string): void { try { localStorage.setItem(PEN_ID_KEY, id); } catch { /* 同上 */ } }
+type DrawTool = 'pen' | 'highlighter';
+const RACK_NAME: Record<DrawTool, string> = { pen: 'ペン', highlighter: '蛍光ペン' };
 
-/** 太さを、ボタンの中の丸の直径（px）に */
+/** 太さを、ボタンの中の印の大きさ（px）に */
 const dotSize = (size: number) => Math.round(5 + size * 2.4);
+const hlSize = (size: number) => Math.round(4 + size * 0.6);
 const sizeLabel = (size: number) => `${size.toFixed(2).replace(/\.?0+$/, '')}`;
 
 export interface Toolbar {
@@ -67,53 +72,70 @@ export function createToolbar(opts: {
   /** 題名をタップしたとき（ノートの名前を変える） */
   onRename?(): void;
 }): Toolbar {
-  let pens = loadPens();
-  let penId = pens.some(p => p.id === loadPenId()) ? loadPenId()! : pens[0].id;
-  const current = (): Pen => pens.find(p => p.id === penId) ?? pens[0];
-  const state: ToolState = { tool: 'pen', penColor: current().color, penSize: current().size, eraserMode: loadEraserMode() };
+  // ペン立てと蛍光ペン立て。中身・選択中・ボタンの並びをそれぞれ持つ
+  interface Rack { def: RackDef; list: Pen[]; id: string; el: HTMLElement; add: HTMLButtonElement; }
+  const makeRack = (kind: DrawTool): Rack => {
+    const def = kind === 'pen' ? PEN_RACK : HIGHLIGHTER_RACK;
+    const list = loadPens(def);
+    const saved = loadPenId(def);
+    const el = document.createElement('span');
+    el.className = kind === 'pen' ? 'tb-pens' : 'tb-pens tb-hls';
+    const add = iconButton('plus', `${RACK_NAME[kind]}を増やす`, () => {
+      const r = racks[kind];
+      r.list = addPen(r.list, currentOf(kind), r.def);
+      savePens(r.list, r.def);
+      choose(kind, r.list[r.list.length - 1].id);
+      openPanel(kind);
+    }, 'tb-add');
+    return { def, list, id: list.some(p => p.id === saved) ? saved! : list[0].id, el, add };
+  };
+  const racks: Record<DrawTool, Rack> = { pen: makeRack('pen'), highlighter: makeRack('highlighter') };
+  const currentOf = (kind: DrawTool): Pen => racks[kind].list.find(p => p.id === racks[kind].id) ?? racks[kind].list[0];
+
+  const state: ToolState = {
+    tool: 'pen',
+    penColor: currentOf('pen').color, penSize: currentOf('pen').size,
+    hlColor: currentOf('highlighter').color, hlSize: currentOf('highlighter').size,
+    eraserMode: loadEraserMode(),
+  };
   const el = document.createElement('div');
   el.className = 'toolbar glass';
 
   const back = iconButton('back', '本棚に戻る', opts.onBack, 'tb-back');
   const title = button(opts.title, 'ノートの名前を変える', () => opts.onRename?.(), 'tb-title');
 
-  // ---- ペン立て ----
-  const penRack = document.createElement('span');
-  penRack.className = 'tb-pens';
-  const addBtn = iconButton('plus', 'ペンを増やす', () => {
-    pens = addPen(pens, current());
-    savePens(pens);
-    choosePen(pens[pens.length - 1].id);
-    openPanel();
-  }, 'tb-add');
-
-  function renderRack() {
-    penRack.replaceChildren(...pens.map((p, i) => {
-      const b = button('', `ペン${i + 1}：太さ${sizeLabel(p.size)}`, () => {
-        // 選んでいるペンをもう一度タップしたら調整パネル
-        if (state.tool === 'pen' && p.id === penId) { if (panel.hidden) openPanel(); else closePanel(); return; }
-        choosePen(p.id);
-      }, 'tb-pen');
+  function renderRack(kind: DrawTool) {
+    const r = racks[kind];
+    r.el.replaceChildren(...r.list.map((p, i) => {
+      const b = button('', `${RACK_NAME[kind]}${i + 1}：太さ${sizeLabel(p.size)}`, () => {
+        // 選んでいるものをもう一度タップしたら調整パネル
+        if (state.tool === kind && p.id === r.id) {
+          if (panel.hidden || panelKind !== kind) openPanel(kind); else closePanel();
+          return;
+        }
+        choose(kind, p.id);
+      }, kind === 'pen' ? 'tb-pen' : 'tb-pen tb-hl');
       b.style.setProperty('--swatch', p.color);
-      b.style.setProperty('--dot', `${dotSize(p.size)}px`);
+      b.style.setProperty('--dot', `${kind === 'pen' ? dotSize(p.size) : hlSize(p.size)}px`);
       b.dataset.id = p.id;
+      b.classList.toggle('is-on', state.tool === kind && p.id === r.id);
       return b;
-    }), addBtn);
-    addBtn.hidden = pens.length >= MAX_PENS;
+    }), r.add);
+    r.add.hidden = r.list.length >= r.def.max;
   }
-  function choosePen(id: string) {
-    penId = id;
-    savePenId(id);
+  function choose(kind: DrawTool, id: string) {
+    racks[kind].id = id;
+    savePenId(id, racks[kind].def);
     closePanel();
-    select('pen');
+    select(kind);
   }
 
-  // ---- 調整パネル ----
+  // ---- 調整パネル（ペンと蛍光ペンで共用） ----
+  let panelKind: DrawTool = 'pen';
   const panel = document.createElement('div');
   panel.className = 'pen-panel glass';
   panel.hidden = true;
   panel.setAttribute('role', 'dialog');
-  panel.setAttribute('aria-label', 'ペンの調整');
 
   const preview = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
   preview.setAttribute('viewBox', '0 0 240 48');
@@ -126,12 +148,7 @@ export function createToolbar(opts: {
 
   const swatches = document.createElement('div');
   swatches.className = 'pen-swatches';
-  const swatchBtns = PALETTE.map(c => {
-    const b = button('', `色：${c.name}`, () => change({ color: c.value }), 'tb-swatch');
-    b.style.setProperty('--swatch', c.value);
-    b.dataset.value = c.value;
-    return b;
-  });
+  let swatchBtns: HTMLButtonElement[] = [];
   const custom = document.createElement('label');
   custom.className = 'tb-btn pen-custom';
   const customInput = document.createElement('input');
@@ -139,14 +156,21 @@ export function createToolbar(opts: {
   customInput.setAttribute('aria-label', 'その他の色');
   customInput.addEventListener('input', () => change({ color: customInput.value.toUpperCase() }));
   custom.append(customInput, document.createTextNode('その他'));
-  swatches.append(...swatchBtns, custom);
+  function buildSwatches() {
+    swatchBtns = racks[panelKind].def.palette.map(c => {
+      const b = button('', `色：${c.name}`, () => change({ color: c.value }), 'tb-swatch');
+      b.style.setProperty('--swatch', c.value);
+      b.dataset.value = c.value;
+      return b;
+    });
+    swatches.replaceChildren(...swatchBtns, custom);
+  }
 
   const sizeRow = document.createElement('label');
   sizeRow.className = 'pen-size';
   const sizeText = document.createElement('span');
   const slider = document.createElement('input');
   slider.type = 'range';
-  slider.min = String(SIZE_MIN); slider.max = String(SIZE_MAX); slider.step = String(SIZE_STEP);
   slider.setAttribute('aria-label', '太さ');
   slider.addEventListener('input', () => change({ size: Number(slider.value) }));
   sizeRow.append(document.createTextNode('太さ'), slider, sizeText);
@@ -154,23 +178,33 @@ export function createToolbar(opts: {
   const panelActions = document.createElement('div');
   panelActions.className = 'pen-actions';
   const delBtn = button('このペンを削除', 'このペンを削除', () => {
-    const i = pens.findIndex(p => p.id === penId);
-    pens = removePen(pens, penId);
-    savePens(pens);
-    choosePen(pens[Math.max(0, i - 1)].id);
+    const r = racks[panelKind];
+    const i = r.list.findIndex(p => p.id === r.id);
+    r.list = removePen(r.list, r.id);
+    savePens(r.list, r.def);
+    choose(panelKind, r.list[Math.max(0, i - 1)].id);
   }, 'pen-delete');
   panelActions.append(delBtn, button('閉じる', '閉じる', () => closePanel()));
   panel.append(preview, swatches, sizeRow, panelActions);
 
   function change(c: Partial<Omit<Pen, 'id'>>) {
-    pens = updatePen(pens, penId, c);
-    savePens(pens);
+    const r = racks[panelKind];
+    r.list = updatePen(r.list, r.id, c, r.def);
+    savePens(r.list, r.def);
     refresh();
   }
   const outside = (e: PointerEvent) => {
     if (!el.contains(e.target as Node)) closePanel();
   };
-  function openPanel() {
+  function openPanel(kind: DrawTool) {
+    panelKind = kind;
+    const def = racks[kind].def;
+    panel.setAttribute('aria-label', `${RACK_NAME[kind]}の調整`);
+    slider.min = String(def.sizeMin); slider.max = String(def.sizeMax); slider.step = String(def.sizeStep);
+    delBtn.textContent = `この${RACK_NAME[kind]}を削除`;
+    delBtn.title = delBtn.textContent;
+    delBtn.setAttribute('aria-label', delBtn.textContent);
+    buildSwatches();
     panel.hidden = false;
     refresh();
     document.addEventListener('pointerdown', outside, true);
@@ -180,11 +214,7 @@ export function createToolbar(opts: {
     document.removeEventListener('pointerdown', outside, true);
   }
 
-  const toolBtns: Record<Exclude<Tool, 'pen'>, HTMLButtonElement> = {
-    highlighter: button('蛍光', '蛍光ペン', () => select('highlighter')),
-    eraser: button('消', '消しゴム（もう一度押すとペンに戻る）', () => toggleEraser()),
-  };
-
+  const eraserBtn = button('消', '消しゴム（もう一度押すとペンに戻る）', () => toggleEraser());
   const eraserBtns = ERASER_MODES.map(m => {
     const b = button(m.name, m.title, () => {
       state.eraserMode = m.value; saveEraserMode(m.value); select('eraser');
@@ -209,31 +239,34 @@ export function createToolbar(opts: {
   const importPdf = iconButton('pdf', 'PDFを取り込む', () => fileInput.click());
 
   const sep = () => { const s = document.createElement('span'); s.className = 'tb-sep'; return s; };
-  el.append(back, title, sep(), penRack, sep(), toolBtns.highlighter, toolBtns.eraser, ...eraserBtns,
+  el.append(back, title, sep(), racks.pen.el, sep(), racks.highlighter.el, sep(), eraserBtn, ...eraserBtns,
     sep(), undo, redo, sep(), addPage, importPdf, fileInput, panel);
 
   function refresh() {
-    const pen = current();
-    state.penColor = pen.color;
-    state.penSize = pen.size;
-    renderRack();
-    for (const b of penRack.querySelectorAll<HTMLButtonElement>('.tb-pen')) {
-      b.classList.toggle('is-on', state.tool === 'pen' && b.dataset.id === penId);
-    }
-    for (const [t, b] of Object.entries(toolBtns)) b.classList.toggle('is-on', state.tool === t);
+    const pen = currentOf('pen'), hl = currentOf('highlighter');
+    state.penColor = pen.color; state.penSize = pen.size;
+    state.hlColor = hl.color; state.hlSize = hl.size;
+    renderRack('pen');
+    renderRack('highlighter');
+    eraserBtn.classList.toggle('is-on', state.tool === 'eraser');
     for (const b of eraserBtns) b.classList.toggle('is-on', state.tool === 'eraser' && b.dataset.value === state.eraserMode);
     // パネル
-    previewPath.setAttribute('stroke', pen.color);
-    previewPath.setAttribute('stroke-width', String(pen.size * 2));
-    for (const b of swatchBtns) b.classList.toggle('is-on', b.dataset.value === pen.color);
-    custom.classList.toggle('is-on', !PALETTE.some(c => c.value === pen.color));
-    customInput.value = pen.color.toLowerCase();
-    slider.value = String(pen.size);
-    sizeText.textContent = sizeLabel(pen.size);
-    delBtn.disabled = pens.length <= 1;
+    const cur = currentOf(panelKind);
+    const palette = racks[panelKind].def.palette;
+    const isHl = panelKind === 'highlighter';
+    previewPath.setAttribute('stroke', cur.color);
+    previewPath.setAttribute('stroke-width', String(cur.size * (isHl ? 1 : 2)));
+    previewPath.setAttribute('stroke-opacity', String(isHl ? HIGHLIGHTER_ALPHA : 1));
+    previewPath.setAttribute('stroke-linecap', isHl ? 'butt' : 'round');
+    for (const b of swatchBtns) b.classList.toggle('is-on', b.dataset.value === cur.color);
+    custom.classList.toggle('is-on', !palette.some(c => c.value === cur.color));
+    customInput.value = cur.color.toLowerCase();
+    slider.value = String(cur.size);
+    sizeText.textContent = sizeLabel(cur.size);
+    delBtn.disabled = racks[panelKind].list.length <= 1;
   }
   // 消しゴムから戻る先
-  let lastDrawTool: Exclude<Tool, 'eraser'> = 'pen';
+  let lastDrawTool: DrawTool = 'pen';
   function toggleEraser(): Tool {
     select(state.tool === 'eraser' ? lastDrawTool : 'eraser');
     return state.tool;
@@ -241,7 +274,7 @@ export function createToolbar(opts: {
   function select(t: Tool) {
     if (t !== 'eraser') lastDrawTool = t;
     state.tool = t;
-    if (t !== 'pen') closePanel();
+    if (t !== panelKind) closePanel();
     refresh();
   }
   refresh();
