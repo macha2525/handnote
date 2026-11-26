@@ -20,7 +20,7 @@ export function btn(label: string, onClick: () => void, cls = 'btn'): HTMLButton
 /** 削除などの確認。「削除する」を押したら true */
 export function confirmDanger(root: HTMLElement, opts: { title: string; message: string; ok: string }): Promise<boolean> {
   return new Promise(resolve => {
-    const dlg = el('dialog', 'dialog');
+    const dlg = el('dialog', 'dialog glass');
     let result = false;
     dlg.append(el('h2', '', opts.title), el('p', 'dialog-message', opts.message));
     const actions = el('div', 'actions');
@@ -43,7 +43,7 @@ export async function openShelf(root: HTMLElement, nav: { openNotebook(id: strin
   root.className = 'screen shelf';
   const notebooks = await listNotebooks();
 
-  const header = el('header', 'bar');
+  const header = el('header', 'bar glass');
   header.append(el('h1', 'bar-title', '本棚'), btn('新しいノートブック', () => showCreate(), 'btn btn-primary'));
   root.append(header);
 
@@ -62,7 +62,7 @@ export async function openShelf(root: HTMLElement, nav: { openNotebook(id: strin
   }
 
   function showCreate() {
-    const dlg = el('dialog', 'dialog');
+    const dlg = el('dialog', 'dialog glass');
     const form = el('form');
     form.method = 'dialog';
     form.append(el('h2', '', '新しいノートブック'));

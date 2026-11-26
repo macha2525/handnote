@@ -85,57 +85,77 @@ h1, h2, h3 { font-family: var(--font-display); font-weight: 700; letter-spacing:
 
 /* ---- 共通 ---- */
 .bar {
-  display: flex; align-items: center; gap: 8px; padding: 8px 16px;
-  padding-top: max(8px, env(safe-area-inset-top));
-  background: var(--bg, var(--desk)); color: var(--fg, var(--ink));
-  border-bottom: 1px solid var(--rule);
+  margin: max(10px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right)) 0 max(10px, env(safe-area-inset-left));
+  min-height: 60px; padding: 8px 10px 8px 12px; border-radius: 30px;
+  display: flex; align-items: center; gap: 8px; flex: none;
 }
-.bar-title { font-size: 20px; margin: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bar-title { font-size: 20px; margin: 0 0 0 6px; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.notebook .bar-title::before { /* ノートブックの色の小さな背表紙 */
+  content: ''; display: inline-block; width: 8px; height: 22px; margin-right: 12px; vertical-align: -3px;
+  border-radius: 3px; background: var(--bg); box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.4);
+}
 .btn {
-  min-height: 40px; padding: 0 14px; border: 1px solid var(--rule); border-radius: var(--radius-btn);
-  background: var(--paper); color: var(--ink); font-size: 15px;
+  min-height: 42px; padding: 0 18px; border: 1px solid var(--glass-edge); border-radius: var(--radius-pill);
+  background: var(--glass-soft); color: var(--on-glass); font-size: 15px; font-weight: 400; letter-spacing: 0.06em; cursor: pointer;
 }
-.btn-primary { border-color: var(--ink); font-weight: 700; }
-.btn-danger { background: var(--redpen); border-color: var(--redpen); color: #fff; font-weight: 700; }
-.btn-danger-quiet { color: var(--redpen); border-color: var(--redpen); }
-.btn-small { min-height: 32px; padding: 0 10px; font-size: 13px; }
-.dialog-message { margin: 0 0 16px; line-height: 1.6; }
+.btn:hover { background: var(--glass-soft-hover); }
+.btn-primary { background: var(--brass); border-color: var(--brass); color: var(--on-brass); font-weight: 600; }
+.btn-primary:hover { background: var(--brass); filter: brightness(1.08); }
+.btn-danger { background: var(--danger-fill); border-color: var(--danger-fill); color: #fff; font-weight: 600; }
+.btn-danger:hover { background: var(--danger-fill); filter: brightness(1.12); }
+.btn-danger-quiet { color: var(--danger); border-color: rgb(242 160 168 / 0.35); }
+.btn-small { min-height: 34px; padding: 0 12px; font-size: 13px; }
+.dialog-message { margin: 0 0 18px; line-height: 1.8; color: var(--on-glass-muted); }
 .btn:active, .tb-btn:active, .spine:active { transform: translateY(1px); }
-.status { padding: 8px 16px; margin: 0; color: var(--redpen); font-weight: 700; }
+.status { padding: 10px 24px 0; margin: 0; color: var(--danger); font-weight: 600; }
 .status:empty { display: none; }
-.empty { padding: 32px 16px; display: flex; flex-direction: column; align-items: flex-start; gap: 12px; }
+.empty { padding: 40px 24px; display: flex; flex-direction: column; align-items: flex-start; gap: 16px; color: var(--on-glass-muted); }
+.empty p { margin: 0; }
 
 /* ---- 本棚 ---- */
-.shelf-body { flex: 1; overflow: auto; background: var(--paper); }
-.spines { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: flex-start; gap: 6px; padding: 24px 16px; }
+.shelf-body { flex: 1; overflow: auto; }
+.spines { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: flex-start; gap: 12px; padding: 32px max(24px, env(safe-area-inset-left)); }
 .spine {
-  width: 56px; height: 240px; padding: 12px 0; border: 0; border-radius: 3px 3px 0 0;
-  background: var(--bg); color: var(--fg); box-shadow: inset -4px 0 0 rgb(0 0 0 / 0.12);
+  position: relative; width: 58px; height: 248px; padding: 16px 0; border: 1px solid rgb(255 255 255 / 0.22); border-radius: 12px 12px 8px 8px;
+  background: color-mix(in srgb, var(--bg) 78%, transparent); color: var(--fg);
+  -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.45), inset -4px 0 0 rgb(0 0 0 / 0.12), 0 12px 26px var(--glass-shadow);
   display: flex; justify-content: center; align-items: flex-start; cursor: pointer;
 }
-.spine-title { writing-mode: vertical-rl; font-size: 17px; font-weight: 700; letter-spacing: 0.08em; max-height: 216px; overflow: hidden; }
+.spine::before { content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; background: linear-gradient(180deg, rgb(255 255 255 / 0.18), transparent 35%); }
+.spine-title { font-family: var(--font-display); writing-mode: vertical-rl; font-size: 17px; font-weight: 700; letter-spacing: 0.14em; max-height: 216px; overflow: hidden; }
+.spine:focus-visible { outline: 2px solid var(--brass); outline-offset: 3px; }
 
-.dialog { border: 1px solid var(--rule); border-radius: 6px; background: var(--paper); color: var(--ink); padding: 20px; width: min(420px, 92vw); }
-.dialog::backdrop { background: rgb(31 35 48 / 0.35); }
-.dialog h2 { margin: 0 0 12px; font-size: 18px; }
-.field { display: flex; flex-direction: column; gap: 6px; border: 0; padding: 0; margin: 0 0 16px; }
-.field input[type=text], .field input:not([type]) { font: inherit; font-size: 16px; padding: 8px; border: 1px solid var(--rule); border-radius: var(--radius-btn); background: #fff; }
-.field legend { padding: 0; margin-bottom: 6px; }
-.choice { display: flex; align-items: center; gap: 8px; min-height: 36px; }
-.swatches { display: flex; gap: 8px; }
-.swatch { width: 40px; height: 40px; border-radius: var(--radius-btn); background: var(--bg); border: 1px solid var(--rule); display: grid; place-items: center; }
-.swatch input { appearance: none; margin: 0; width: 100%; height: 100%; border-radius: var(--radius-btn); }
-.swatch input:checked { outline: 3px solid var(--ink); outline-offset: 2px; }
+.dialog { position: fixed; padding: 24px; width: min(440px, 92vw); border-radius: var(--radius-panel); }
+.dialog::backdrop { background: rgb(6 10 24 / 0.6); -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px); }
+.dialog h2 { margin: 0 0 14px; font-size: 19px; }
+.field { display: flex; flex-direction: column; gap: 8px; border: 0; padding: 0; margin: 0 0 18px; }
+.field > span, .field legend { color: var(--on-glass-muted); font-size: 14px; letter-spacing: 0.06em; }
+.field input[type=text], .field input:not([type]) {
+  font: inherit; font-size: 16px; padding: 10px 12px; border: 1px solid var(--glass-edge); border-radius: 12px;
+  background: rgb(0 0 0 / 0.25); color: var(--on-glass);
+}
+.field input::placeholder { color: rgb(169 180 202 / 0.7); }
+.field input:focus-visible { outline: 2px solid var(--brass); outline-offset: 1px; }
+.field legend { padding: 0; margin-bottom: 8px; }
+.choice { display: flex; align-items: center; gap: 10px; min-height: 38px; accent-color: var(--brass); }
+.swatches { display: flex; gap: 10px; }
+.swatch { width: 42px; height: 42px; border-radius: 12px; background: var(--bg); border: 1px solid rgb(255 255 255 / 0.25); display: grid; place-items: center; }
+.swatch input { appearance: none; margin: 0; width: 100%; height: 100%; border-radius: 12px; }
+.swatch input:checked { outline: 2px solid var(--brass); outline-offset: 3px; }
 .actions { display: flex; gap: 8px; flex-wrap: wrap; }
 
 /* ---- ノートブックの中 ---- */
-.sections { flex: 1; overflow: auto; background: var(--paper); padding: 8px 16px 32px; }
-.section-row { padding: 12px 0; border-bottom: 1px solid var(--rule); display: flex; flex-direction: column; gap: 8px; }
-.section-label { margin: 0; font-size: 17px; }
+.sections { flex: 1; overflow: auto; padding: 16px max(10px, env(safe-area-inset-right)) 40px max(10px, env(safe-area-inset-left)); display: flex; flex-direction: column; gap: 12px; }
+.section-row { padding: 16px 18px; border-radius: var(--radius-panel); display: flex; flex-direction: column; gap: 10px; }
+.section-label { margin: 0; font-size: 18px; }
 .note-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
 .note-item { display: flex; align-items: center; gap: 12px; }
-.note-link { background: none; border: 0; padding: 6px 0; text-align: left; font-size: 16px; color: var(--ink); text-decoration: underline; text-decoration-color: var(--rule); cursor: pointer; }
-.bg-chooser { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.note-link {
+  background: none; border: 0; padding: 6px 0; text-align: left; font-size: 16px; color: var(--on-glass); cursor: pointer;
+  text-decoration: underline; text-decoration-color: rgb(201 168 106 / 0.6); text-underline-offset: 4px;
+}
+.bg-chooser { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; color: var(--on-glass-muted); }
 
 /* ---- ペン立てと調整パネル ---- */
 .tb-pens { display: inline-flex; gap: 2px; align-items: center; }

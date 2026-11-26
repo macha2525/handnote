@@ -45,7 +45,7 @@ export async function openNotebookView(root: HTMLElement, notebookId: string, na
   root.replaceChildren();
   root.className = 'screen notebook';
 
-  const header = el('header', 'bar');
+  const header = el('header', 'bar glass');
   header.style.setProperty('--bg', spineTone(nb.color).bg);
   header.style.setProperty('--fg', spineTone(nb.color).text);
   const unit = nb.kind === 'lecture' ? '回' : '章';
@@ -156,7 +156,7 @@ export async function openNotebookView(root: HTMLElement, notebookId: string, na
   }
 
   async function sectionRow(s: Section): Promise<HTMLElement> {
-    const row = el('section', 'section-row');
+    const row = el('section', 'section-row glass');
     row.append(el('h2', 'section-label', s.label));
 
     const notes = await listNotes(s.id);
