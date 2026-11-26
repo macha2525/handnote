@@ -1,4 +1,5 @@
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 html, body, #app { height: 100%; }
 body { overscroll-behavior: none; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
 button { font: inherit; color: inherit; }
@@ -35,3 +36,52 @@ button { font: inherit; color: inherit; }
 .layer { position: absolute; inset: 0; width: 100%; height: 100%; }
 .layer.under, .layer.ink { pointer-events: none; }
 .layer.live { pointer-events: none; }
+
+/* ---- 共通 ---- */
+.bar {
+  display: flex; align-items: center; gap: 8px; padding: 8px 16px;
+  padding-top: max(8px, env(safe-area-inset-top));
+  background: var(--bg, var(--desk)); color: var(--fg, var(--ink));
+  border-bottom: 1px solid var(--rule);
+}
+.bar-title { font-size: 20px; margin: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.btn {
+  min-height: 40px; padding: 0 14px; border: 1px solid var(--rule); border-radius: var(--radius-btn);
+  background: var(--paper); color: var(--ink); font-size: 15px;
+}
+.btn-primary { border-color: var(--ink); font-weight: 700; }
+.btn:active, .tb-btn:active, .spine:active { transform: translateY(1px); }
+.status { padding: 8px 16px; margin: 0; color: var(--redpen); font-weight: 700; }
+.status:empty { display: none; }
+.empty { padding: 32px 16px; display: flex; flex-direction: column; align-items: flex-start; gap: 12px; }
+
+/* ---- 本棚 ---- */
+.shelf-body { flex: 1; overflow: auto; background: var(--paper); }
+.spines { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: flex-start; gap: 6px; padding: 24px 16px; }
+.spine {
+  width: 56px; height: 240px; padding: 12px 0; border: 0; border-radius: 3px 3px 0 0;
+  background: var(--bg); color: var(--fg); box-shadow: inset -4px 0 0 rgb(0 0 0 / 0.12);
+  display: flex; justify-content: center; align-items: flex-start; cursor: pointer;
+}
+.spine-title { writing-mode: vertical-rl; font-size: 17px; font-weight: 700; letter-spacing: 0.08em; max-height: 216px; overflow: hidden; }
+
+.dialog { border: 1px solid var(--rule); border-radius: 6px; background: var(--paper); color: var(--ink); padding: 20px; width: min(420px, 92vw); }
+.dialog::backdrop { background: rgb(31 35 48 / 0.35); }
+.dialog h2 { margin: 0 0 12px; font-size: 18px; }
+.field { display: flex; flex-direction: column; gap: 6px; border: 0; padding: 0; margin: 0 0 16px; }
+.field input[type=text], .field input:not([type]) { font: inherit; font-size: 16px; padding: 8px; border: 1px solid var(--rule); border-radius: var(--radius-btn); background: #fff; }
+.field legend { padding: 0; margin-bottom: 6px; }
+.choice { display: flex; align-items: center; gap: 8px; min-height: 36px; }
+.swatches { display: flex; gap: 8px; }
+.swatch { width: 40px; height: 40px; border-radius: var(--radius-btn); background: var(--bg); border: 1px solid var(--rule); display: grid; place-items: center; }
+.swatch input { appearance: none; margin: 0; width: 100%; height: 100%; border-radius: var(--radius-btn); }
+.swatch input:checked { outline: 3px solid var(--ink); outline-offset: 2px; }
+.actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* ---- ノートブックの中 ---- */
+.sections { flex: 1; overflow: auto; background: var(--paper); padding: 8px 16px 32px; }
+.section-row { padding: 12px 0; border-bottom: 1px solid var(--rule); display: flex; flex-direction: column; gap: 8px; }
+.section-label { margin: 0; font-size: 17px; }
+.note-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.note-link { background: none; border: 0; padding: 6px 0; text-align: left; font-size: 16px; color: var(--ink); text-decoration: underline; text-decoration-color: var(--rule); cursor: pointer; }
+.bg-chooser { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
