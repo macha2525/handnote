@@ -1,0 +1,41 @@
+import type { Stroke } from '../model/types';
+
+export type InkOp = { kind: 'add'; stroke: Stroke } | { kind: 'remove'; strokes: Stroke[] };
+
+const LIMIT = 200;
+
+function apply(op: InkOp, strokes: Stroke[]): Stroke[] {
+  if (op.kind === 'add') return [...strokes, op.stroke];
+  const ids = new Set(op.strokes.map(s => s.id));
+  return strokes.filter(s => !ids.has(s.id));
+}
+function revert(op: InkOp, strokes: Stroke[]): Stroke[] {
+  if (op.kind === 'add') return strokes.filter(s => s.id !== op.stroke.id);
+  return [...strokes, ...op.strokes];
+}
+
+/** 元に戻す・やり直す。上限200手。新しい操作でやり直しは消える。 */
+export class History {
+  private done: InkOp[] = [];
+  private undone: InkOp[] = [];
+
+  push(op: InkOp): void {
+    this.done.push(op);
+    if (this.done.length > LIMIT) this.done.shift();
+    this.undone = [];
+  }
+  undo(strokes: Stroke[]): Stroke[] {
+    const op = this.done.pop();
+    if (!op) return strokes;
+    this.undone.push(op);
+    return revert(op, strokes);
+  }
+  redo(strokes: Stroke[]): Stroke[] {
+    const op = this.undone.pop();
+    if (!op) return strokes;
+    this.done.push(op);
+    return apply(op, strokes);
+  }
+  canUndo(): boolean { return this.done.length > 0; }
+  canRedo(): boolean { return this.undone.length > 0; }
+}
