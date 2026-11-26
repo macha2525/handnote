@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { nextSectionLabel, NOTEBOOK_COLORS } from '../../src/shelf/labels';
+import { nextSectionLabel, NOTEBOOK_COLORS, spineTone } from '../../src/shelf/labels';
 import type { Section } from '../../src/model/types';
 
 const sec = (order: number): Section => ({ id: 's' + order, notebookId: 'n', order, label: '' });
@@ -28,8 +28,21 @@ describe('labels', () => {
   it('notebook colors meet 4.5:1 contrast with their label text', () => {
     expect(NOTEBOOK_COLORS).toHaveLength(5);
     for (const c of NOTEBOOK_COLORS) {
-      expect(['#F7F8FA', '#1F2330']).toContain(c.text);
-      expect(contrast(c.bg, c.text)).toBeGreaterThanOrEqual(4.5);
+      const t = spineTone(c.bg);
+      expect(t.bg).toBe(c.bg);
+      expect(contrast(t.bg, t.text)).toBeGreaterThanOrEqual(4.5);
     }
+  });
+  it('old notebook colors are read as the new ones', () => {
+    const newBgs = NOTEBOOK_COLORS.map(c => c.bg);
+    for (const old of ['#1F2330', '#C8334A', '#8FA7C9', '#F2D35B', '#E3E7EE']) {
+      expect(newBgs).toContain(spineTone(old).bg);
+    }
+    expect(spineTone('#1F2330').bg).toBe('#2E4B8A');
+    expect(spineTone('#c8334a').bg).toBe('#8A3A45');
+  });
+  it('unknown colors still get readable text', () => {
+    const t = spineTone('#123456');
+    expect(contrast(t.bg, t.text)).toBeGreaterThanOrEqual(4.5);
   });
 });

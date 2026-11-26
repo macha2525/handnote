@@ -6,7 +6,7 @@ import {
   StorageFullError,
 } from '../storage/db';
 import { createPdfNote } from '../pdf/pdf-doc';
-import { nextSectionLabel, textColorFor } from './labels';
+import { nextSectionLabel, spineTone } from './labels';
 import { btn, confirmDanger, el } from './shelf';
 
 const BACKGROUNDS: { value: Background; name: string }[] = [
@@ -46,8 +46,8 @@ export async function openNotebookView(root: HTMLElement, notebookId: string, na
   root.className = 'screen notebook';
 
   const header = el('header', 'bar');
-  header.style.setProperty('--bg', nb.color);
-  header.style.setProperty('--fg', textColorFor(nb.color));
+  header.style.setProperty('--bg', spineTone(nb.color).bg);
+  header.style.setProperty('--fg', spineTone(nb.color).text);
   const unit = nb.kind === 'lecture' ? '回' : '章';
   header.append(
     btn('本棚に戻る', nav.openShelf),

@@ -17,12 +17,23 @@ export function contrastRatio(a: string, b: string): number {
   return (x + 0.05) / (y + 0.05);
 }
 
-/** 背表紙の色。文字は紙か墨のうち、コントラストが高いほう */
-export const NOTEBOOK_COLORS: { bg: string; text: string; name: string }[] = [
-  { bg: INK, name: '墨' }, { bg: REDPEN, name: '赤' }, { bg: RULE, name: '青' },
-  { bg: MARKER, name: '黄' }, { bg: DESK, name: '灰' },
-].map(c => ({ ...c, text: contrastRatio(c.bg, PAPER) >= contrastRatio(c.bg, INK) ? PAPER : INK }));
+/** 背表紙の色（藍の机で映える5色）。文字は紙か墨のうち、コントラストが高いほう */
+export const NOTEBOOK_COLORS: { bg: string; name: string }[] = [
+  { bg: '#2E4B8A', name: '藍' }, { bg: '#8A3A45', name: '臙脂' }, { bg: '#3F6E70', name: '青磁' },
+  { bg: '#B8955A', name: '真鍮' }, { bg: '#5A4A7E', name: '葡萄' },
+];
 
-export function textColorFor(bg: string): string {
-  return NOTEBOOK_COLORS.find(c => c.bg === bg)?.text ?? INK;
+/** 前のデザインの色 → 新しい色 */
+const OLD_TO_NEW: Record<string, string> = {
+  [INK]: '#2E4B8A', [REDPEN]: '#8A3A45', [RULE]: '#3F6E70', [MARKER]: '#B8955A', [DESK]: '#5A4A7E',
+};
+
+const HEX = /^#[0-9a-f]{6}$/i;
+
+/** 保存されている色（古い色も含む）から、背表紙の塗りと文字の色を決める */
+export function spineTone(stored: string): { bg: string; text: string } {
+  const key = Object.keys(OLD_TO_NEW).find(k => k.toLowerCase() === stored.toLowerCase());
+  const bg = key ? OLD_TO_NEW[key] : HEX.test(stored) ? stored : NOTEBOOK_COLORS[0].bg;
+  const text = contrastRatio(bg, PAPER) >= contrastRatio(bg, INK) ? PAPER : INK;
+  return { bg, text };
 }

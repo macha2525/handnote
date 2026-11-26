@@ -1,7 +1,7 @@
 import type { Notebook, NotebookKind } from '../model/types';
 import { newId } from '../model/ids';
 import { listNotebooks, saveNotebook } from '../storage/db';
-import { NOTEBOOK_COLORS, textColorFor } from './labels';
+import { NOTEBOOK_COLORS, spineTone } from './labels';
 
 export function el<K extends keyof HTMLElementTagNameMap>(tag: K, cls = '', text = ''): HTMLElementTagNameMap[K] {
   const e = document.createElement(tag);
@@ -130,8 +130,8 @@ export async function openShelf(root: HTMLElement, nav: { openNotebook(id: strin
 
 function spine(nb: Notebook, onOpen: () => void): HTMLButtonElement {
   const b = btn('', onOpen, 'spine');
-  b.style.setProperty('--bg', nb.color);
-  b.style.setProperty('--fg', textColorFor(nb.color));
+  b.style.setProperty('--bg', spineTone(nb.color).bg);
+  b.style.setProperty('--fg', spineTone(nb.color).text);
   b.setAttribute('aria-label', `${nb.title}を開く`);
   b.append(el('span', 'spine-title', nb.title));
   return b;
