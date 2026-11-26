@@ -92,3 +92,31 @@ input, textarea { -webkit-user-select: text; user-select: text; }
 .note-item { display: flex; align-items: center; gap: 12px; }
 .note-link { background: none; border: 0; padding: 6px 0; text-align: left; font-size: 16px; color: var(--ink); text-decoration: underline; text-decoration-color: var(--rule); cursor: pointer; }
 .bg-chooser { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+/* ---- ペン立てと調整パネル ---- */
+.toolbar { position: relative; }
+.tb-pens { display: inline-flex; gap: 4px; align-items: center; }
+.tb-pen { width: 40px; padding: 0; display: grid; place-items: center; }
+.tb-pen::after { content: ''; width: var(--dot); height: var(--dot); border-radius: 50%; background: var(--swatch); }
+.tb-add { width: 36px; padding: 0; font-size: 18px; }
+.tb-swatch.is-on { box-shadow: 0 0 0 2px var(--ink) inset; }
+.pen-panel {
+  position: absolute; top: 100%; left: 8px; z-index: 20; margin-top: 4px;
+  width: min(360px, calc(100vw - 16px)); padding: 12px;
+  background: var(--paper); border: 1px solid var(--rule); border-radius: 6px;
+  box-shadow: 0 6px 20px rgb(31 35 48 / 0.18);
+  display: flex; flex-direction: column; gap: 12px;
+}
+.pen-preview { width: 100%; height: 48px; background: #fff; border: 1px solid var(--desk); border-radius: var(--radius-btn); }
+.pen-swatches { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; }
+.pen-swatches .tb-swatch { width: auto; min-height: 40px; }
+.pen-swatches .tb-swatch::after { width: 22px; height: 22px; }
+.pen-custom { grid-column: span 6; display: flex; align-items: center; gap: 8px; min-height: 40px; }
+.pen-custom input { width: 32px; height: 28px; padding: 0; border: 0; background: none; }
+.pen-size { display: flex; align-items: center; gap: 10px; font-size: 14px; }
+.pen-size input { flex: 1; min-height: 32px; }
+.pen-size span { min-width: 3ch; text-align: right; font-variant-numeric: tabular-nums; }
+.pen-actions { display: flex; justify-content: space-between; gap: 8px; }
+.pen-actions button { min-height: 36px; padding: 0 12px; border: 1px solid var(--rule); border-radius: var(--radius-btn); background: var(--paper); }
+.pen-delete { color: var(--redpen); border-color: var(--redpen) !important; }
+.pen-delete:disabled { opacity: 0.4; }
