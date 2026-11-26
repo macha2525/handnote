@@ -1,7 +1,8 @@
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
 html, body, #app { height: 100%; }
-body { overscroll-behavior: none; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+/* manipulation：ダブルタップでの拡大をしない（子要素にも効く） */
+body { touch-action: manipulation; overscroll-behavior: none; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
 button { font: inherit; color: inherit; }
 /* iPadのSafariでは user-select: none の中の入力欄に文字を打てなくなることがあるので戻す */
 input, textarea { -webkit-user-select: text; user-select: text; }
@@ -32,7 +33,7 @@ input, textarea { -webkit-user-select: text; user-select: text; }
 }
 
 /* ---- ページ ---- */
-.pages { flex: 1; overflow: auto; background: var(--desk); -webkit-overflow-scrolling: touch; }
+.pages { touch-action: pan-x pan-y; flex: 1; overflow: auto; background: var(--desk); -webkit-overflow-scrolling: touch; }
 .pages-inner { width: max-content; min-width: 100%; padding: 16px; display: flex; flex-direction: column; align-items: center; gap: 16px; }
 .page { position: relative; background: var(--paper); box-shadow: 0 0 0 1px var(--rule); border-radius: 0; flex: none; }
 .layer { position: absolute; inset: 0; width: 100%; height: 100%; }
@@ -120,3 +121,12 @@ input, textarea { -webkit-user-select: text; user-select: text; }
 .pen-actions button { min-height: 36px; padding: 0 12px; border: 1px solid var(--rule); border-radius: var(--radius-btn); background: var(--paper); }
 .pen-delete { color: var(--redpen); border-color: var(--redpen) !important; }
 .pen-delete:disabled { opacity: 0.4; }
+
+/* ---- 指タップで戻したときのお知らせ ---- */
+.toast {
+  position: fixed; left: 50%; bottom: max(24px, env(safe-area-inset-bottom)); z-index: 30;
+  transform: translate(-50%, 8px); opacity: 0; pointer-events: none;
+  padding: 8px 16px; border-radius: 999px; background: var(--ink); color: var(--paper); font-size: 14px;
+  transition: opacity 0.15s, transform 0.15s;
+}
+.toast.is-shown { opacity: 0.92; transform: translate(-50%, 0); }

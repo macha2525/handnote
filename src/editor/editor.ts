@@ -8,6 +8,7 @@ import { attachInkInput, type InputState } from '../ink/input';
 import { drawPage, fillStroke } from '../ink/render';
 import { eraseAt, erasePartAt } from '../ink/eraser';
 import { createAutosave } from './autosave';
+import { TapGesture, type TapTouch } from './tap-gesture';
 import { createToolbar, HIGHLIGHTER, ERASER_RADIUS } from './toolbar';
 
 const MIN_ZOOM = 0.5;
@@ -267,6 +268,17 @@ export async function openEditor(root: HTMLElement, noteId: string, opts: Editor
         live.points.push(p);
         scheduleLive();
       },
+      onStrokeCancel() {
+        if (live) {
+          live = null;
+          if (liveFrame) { cancelAnimationFrame(liveFrame); liveFrame = 0; }
+          liveCanvas?.remove(); liveCanvas = null;
+        } else if (erasedAny) {
+          note.pages[i].strokes = beforeErase;
+          beforeErase = []; erasedAny = false;
+          drawInk(i);
+        }
+      },
       onStrokeEnd() {
         if (live) {
           const s = live;
@@ -330,20 +342,59 @@ export async function openEditor(root: HTMLElement, noteId: string, opts: Editor
     scroller.scrollTop = ay * k - (cy - r.top);
   }
 
-  let pinch: { d: number; z: number } | null = null;
+  // 指2本で拡大。指の間隔がこれだけ変わるまでは拡大しない（2本指タップで拡大率が揺れないように）
+  const PINCH_DEAD_ZONE = 10;
+  let pinch: { d: number; z: number; started: boolean } | null = null;
   const dist = (t: TouchList) => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
+  const taps = new TapGesture();
+  const tapTouches = (list: TouchList): TapTouch[] => Array.from(list, t => ({
+    id: t.identifier, x: t.clientX, y: t.clientY,
+    stylus: (t as Touch & { touchType?: string }).touchType === 'stylus',
+  }));
   const onTouchStart = (e: TouchEvent) => {
-    if (e.touches.length === 2) pinch = { d: dist(e.touches), z: zoom };
+    taps.start(tapTouches(e.changedTouches), e.timeStamp);
+    if (e.touches.length === 2) pinch = { d: dist(e.touches), z: zoom, started: false };
+    else if (e.touches.length > 2) pinch = null;
   };
   const onTouchMove = (e: TouchEvent) => {
+    taps.move(tapTouches(e.changedTouches));
     if (!pinch || e.touches.length !== 2) return;
     e.preventDefault();
     const t = e.touches;
-    setZoom(pinch.z * dist(t) / pinch.d, (t[0].clientX + t[1].clientX) / 2, (t[0].clientY + t[1].clientY) / 2);
+    const d = dist(t);
+    if (!pinch.started) {
+      if (Math.abs(d - pinch.d) < PINCH_DEAD_ZONE) return;
+      pinch = { d, z: zoom, started: true };
+      taps.cancel();
+    }
+    setZoom(pinch.z * d / pinch.d, (t[0].clientX + t[1].clientX) / 2, (t[0].clientY + t[1].clientY) / 2);
   };
   const onTouchEnd = (e: TouchEvent) => {
-    if (pinch && e.touches.length < 2) { pinch = null; redrawAll(); }
+    if (e.type === 'touchcancel') taps.cancel();
+    const result = taps.end(Array.from(e.changedTouches, t => t.identifier), e.timeStamp);
+    if (pinch && e.touches.length < 2) {
+      if (pinch.started) redrawAll();
+      pinch = null;
+    }
+    if (result) {
+      const can = result === 'undo' ? history.canUndo() : history.canRedo();
+      step(result);
+      showToast(!can ? (result === 'undo' ? '戻せる操作がありません' : 'やり直せる操作がありません')
+        : result === 'undo' ? '元に戻しました' : 'やり直しました');
+    }
   };
+  // 指のタップで戻したとき、ボタンを押していないので小さく知らせる
+  const toast = document.createElement('div');
+  toast.className = 'toast';
+  toast.setAttribute('role', 'status');
+  root.append(toast);
+  let toastTimer: ReturnType<typeof setTimeout> | undefined;
+  function showToast(text: string) {
+    toast.textContent = text;
+    toast.classList.add('is-shown');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toast.classList.remove('is-shown'), 1200);
+  }
   let wheelTimer: ReturnType<typeof setTimeout> | undefined;
   const onWheel = (e: WheelEvent) => {
     if (!e.ctrlKey) return;

@@ -26,6 +26,8 @@ export function decidePointer(
 
 // 拡大・縮小は編集画面が自分で行う（ブラウザに任せると道具バーごと拡大される）
 const NAV_TOUCH_ACTION = 'pan-x pan-y';
+/** 指で書き始めてから、この時間内に2本目の指が来たら線を捨てる（ms） */
+const CANCEL_WINDOW_MS = 350;
 /** 同じ状態を共有するページ。ペンを検知したら全部まとめてスクロール用に切り替える */
 const attached = new WeakMap<InputState, Set<HTMLElement>>();
 
@@ -34,11 +36,15 @@ export function attachInkInput(el: HTMLElement, opts: {
   onStrokeStart(p: StrokePoint): void;
   onStrokeMove(p: StrokePoint): void;
   onStrokeEnd(): void;
+  /** 書き始めてすぐ指が増えた（2本指タップや拡大）。書きかけの線は捨てる */
+  onStrokeCancel?(): void;
   /** 画面全体で共有する状態（ページをまたいでもペン検知を引き継ぐ） */
   state?: InputState;
 }): () => void {
   const state = opts.state ?? { penSeen: false };
   let active: number | null = null;
+  let activeType = '';
+  let activeSince = 0;
   el.style.touchAction = state.penSeen ? NAV_TOUCH_ACTION : 'none';
   if (!attached.has(state)) attached.set(state, new Set());
   const group = attached.get(state)!;
@@ -55,17 +61,36 @@ export function attachInkInput(el: HTMLElement, opts: {
     opts.onStrokeEnd();
   };
 
+  /** 指で書き始めたばかりなら線を捨てる。捨てたら true */
+  const cancelIfRecent = (now: number): boolean => {
+    if (active === null || activeType !== 'touch' || !opts.onStrokeCancel) return false;
+    if (now - activeSince >= CANCEL_WINDOW_MS) return false;
+    active = null;
+    opts.onStrokeCancel();
+    return true;
+  };
+  // 2本目の指がページの外（余白など）に触れたときも気づけるよう、画面全体で見る
+  const anyTouch = (e: TouchEvent) => {
+    const fingers = Array.from(e.touches).filter(t => (t as Touch & { touchType?: string }).touchType !== 'stylus');
+    if (fingers.length >= 2 && !cancelIfRecent(e.timeStamp) && active !== null && activeType === 'touch') end();
+  };
+
   const down = (e: PointerEvent) => {
     if (e.pointerType === 'mouse' && e.button !== 0) return;
     const d = decidePointer(e, state);
     if (state.penSeen) for (const g of group) g.style.touchAction = NAV_TOUCH_ACTION;
     if (d !== 'draw') {
-      // 指で書いている最中に2本目の指が来たら、拡大とみなして線を終える
-      if (active !== null && e.pointerType === 'touch') end();
+      // 指で書いている最中に2本目の指が来たら、拡大とみなして線を終える。
+      // 書き始めてすぐなら、2本指タップの1本目だったとみなして線を捨てる
+      if (active !== null && e.pointerType === 'touch' && activeType === 'touch') {
+        if (!cancelIfRecent(e.timeStamp)) end();
+      }
       return;
     }
     if (active !== null) return;
     active = e.pointerId;
+    activeType = e.pointerType;
+    activeSince = e.timeStamp;
     try { el.setPointerCapture(e.pointerId); } catch { /* jsdom など */ }
     e.preventDefault();
     opts.onStrokeStart(point(e));
@@ -91,7 +116,9 @@ export function attachInkInput(el: HTMLElement, opts: {
   el.addEventListener('pointercancel', up);
   el.addEventListener('touchstart', touchStart, { passive: false });
   el.addEventListener('touchmove', touchStart, { passive: false });
+  window.addEventListener('touchstart', anyTouch, { capture: true, passive: true });
   return () => {
+    window.removeEventListener('touchstart', anyTouch, { capture: true });
     group.delete(el);
     el.removeEventListener('pointerdown', down);
     el.removeEventListener('pointermove', move);

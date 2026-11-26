@@ -46,3 +46,49 @@ describe('attachInkInput touch-action', () => {
     expect(b.style.touchAction).toBe('pan-x pan-y');
   });
 });
+
+describe('finger stroke vs second finger', () => {
+  function ev(el: HTMLElement, type: string, o: Record<string, unknown>) {
+    const e = new Event(type, { bubbles: true, cancelable: true }) as Event & Record<string, unknown>;
+    Object.defineProperty(e, 'timeStamp', { value: o.t });
+    Object.assign(e, { pointerType: 'touch', button: 0, clientX: 0, clientY: 0, pressure: 0.5, ...o });
+    el.dispatchEvent(e);
+  }
+  async function setup() {
+    const { attachInkInput } = await import('../../src/ink/input');
+    const log: string[] = [];
+    const el = document.createElement('div');
+    attachInkInput(el, {
+      getScale: () => 1, state: { penSeen: false },
+      onStrokeStart() { log.push('start'); }, onStrokeMove() {},
+      onStrokeEnd() { log.push('end'); }, onStrokeCancel() { log.push('cancel'); },
+    });
+    return { el, log };
+  }
+
+  it('a quick second finger discards the stroke (two-finger tap)', async () => {
+    const { el, log } = await setup();
+    ev(el, 'pointerdown', { pointerId: 1, isPrimary: true, t: 1000 });
+    ev(el, 'pointerdown', { pointerId: 2, isPrimary: false, t: 1060 });
+    ev(el, 'pointerup', { pointerId: 1, t: 1120 });
+    expect(log).toEqual(['start', 'cancel']);
+  });
+
+  it('a late second finger keeps the stroke (pinch while writing)', async () => {
+    const { el, log } = await setup();
+    ev(el, 'pointerdown', { pointerId: 1, isPrimary: true, t: 1000 });
+    ev(el, 'pointerdown', { pointerId: 2, isPrimary: false, t: 1800 });
+    expect(log).toEqual(['start', 'end']);
+  });
+
+  it('a quick second finger off the page (margin) also discards the stroke', async () => {
+    const { el, log } = await setup();
+    ev(el, 'pointerdown', { pointerId: 1, isPrimary: true, t: 1000 });
+    const te = new Event('touchstart', { bubbles: true });
+    Object.defineProperty(te, 'timeStamp', { value: 1050 });
+    Object.assign(te, { touches: [{ identifier: 1 }, { identifier: 2 }] });
+    document.body.dispatchEvent(te);
+    ev(el, 'pointerup', { pointerId: 1, t: 1100 });
+    expect(log).toEqual(['start', 'cancel']);
+  });
+});

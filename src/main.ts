@@ -9,6 +9,12 @@ import { openEditor } from './editor/editor';
 
 configurePdfWorker(pdfWorkerUrl);
 
+// 画面全体をブラウザに拡大させない（拡大はノートのページだけ、編集画面が自分で行う）。
+// ダブルタップ拡大は CSS の touch-action で、ピンチ拡大は Safari の gesture イベントで止める
+for (const type of ['gesturestart', 'gesturechange', 'gestureend']) {
+  document.addEventListener(type, e => e.preventDefault(), { passive: false });
+}
+
 const root = document.getElementById('app')!;
 let cleanup: (() => Promise<void>) | null = null;
 
