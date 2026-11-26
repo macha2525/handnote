@@ -10,7 +10,7 @@ const PRESSURE_ALPHA = 0.35;
 /**
  * Apple Pencil の生の入力を、きれいな線になるよう整える。保存は生のまま、描くときに通す。
  * - 最初の点の筆圧0（Safariでよく来る）を、次の本当の筆圧で埋める → 書き始めが針のように細くならない
- * - その場にとどまった書き始め・書き終わりを1点にまとめ、筆圧はいちばん強いものを使う → 止めが丸く残る
+ * - その場にとどまった書き始め・書き終わりを1点にまとめ、筆圧はとなりの線にそろえる → 止めが丸く残り、点にもならない
  *   （動きながら抜いた払いは、とどまらないので細く抜けたまま）
  * - ほとんど動いていない点を間引く
  * - 筆圧のばらつきを前後からならす（遅れが出ない） → 線のふちがガタガタしない
@@ -43,15 +43,19 @@ function collapseStill(points: StrokePoint[]): StrokePoint[] {
   let tail = points.length - 1;
   while (tail > head && near(points[tail - 1], last)) tail--;
   // 全体がとどまっている（点を打っただけ）なら1点にする
-  if (head >= points.length) return [merge(points)];
-  return [merge(points.slice(0, head)), ...points.slice(head, tail), merge(points.slice(tail))];
+  if (head >= points.length) return [merge(points, Math.max(...points.map(pt => pt.p)))];
+  // まとめた点の筆圧は、となりの線の筆圧にそろえる。
+  // いちばん強い筆圧を使うと、着地や停止の一瞬の押し込みで、線より太い点が残る
+  const middle = points.slice(head, tail);
+  const startP = middle.length ? middle[0].p : points[0].p;
+  const endP = middle.length ? middle[middle.length - 1].p : last.p;
+  return [merge(points.slice(0, head), startP), ...middle, merge(points.slice(tail), endP)];
 }
 
-function merge(group: StrokePoint[]): StrokePoint {
-  if (group.length === 1) return group[0];
+function merge(group: StrokePoint[], p: number): StrokePoint {
   const x = group.reduce((s, pt) => s + pt.x, 0) / group.length;
   const y = group.reduce((s, pt) => s + pt.y, 0) / group.length;
-  return { x, y, p: Math.max(...group.map(pt => pt.p)) };
+  return { x, y, p };
 }
 
 function dropTinySteps(points: StrokePoint[]): StrokePoint[] {

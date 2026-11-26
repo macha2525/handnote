@@ -48,4 +48,15 @@ describe('cleanPoints', () => {
     expect(cleanPoints([{ x: 1, y: 1, p: 0.4 }]).length).toBe(1);
     expect(cleanPoints([]).length).toBe(0);
   });
+
+  it('a press when landing or stopping does not leave a dot fatter than the line', () => {
+    const pts: StrokePoint[] = [];
+    for (const p of [0.2, 0.45, 0.6, 0.55, 0.45]) pts.push({ x: 0.2, y: 0.1, p });   // 着地で押し込む
+    for (let i = 1; i <= 30; i++) pts.push({ x: i * 3, y: 0, p: 0.3 });               // 軽い筆圧で書く
+    for (const p of [0.45, 0.6, 0.4, 0.15]) pts.push({ x: 90.3, y: 0.2, p });          // 止めで押し込む
+    const out = cleanPoints(pts);
+    expect(out[0].p).toBeLessThan(0.36);
+    expect(out[out.length - 1].p).toBeLessThan(0.36);
+    expect(out[out.length - 1].p).toBeGreaterThan(0.25); // 細くしぼみもしない（止めは止めのまま）
+  });
 });
