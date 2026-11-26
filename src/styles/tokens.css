@@ -1,21 +1,60 @@
-@import '@fontsource/biz-udpgothic/400.css';
-@import '@fontsource/biz-udpgothic/700.css';
+@import '@fontsource/shippori-mincho-b1/700.css';
 
+/* 深い藍の書斎：藍の机の上に、すりガラスの道具と明るい紙 */
 :root {
+  /* 紙と線（ノートの中身の見え方は変えない） */
   --paper: #F7F8FA;
   --ink: #1F2330;
   --rule: #8FA7C9;
-  --desk: #E3E7EE;
   --redpen: #C8334A;
   --marker: #F2D35B;
-  --radius-btn: 4px;
-  --font: 'BIZ UDPGothic', sans-serif;
+
+  /* 机 */
+  --desk: #0C1224;
+  --desk-bg:
+    radial-gradient(110% 80% at 85% 0%, #24407A 0%, transparent 55%),
+    radial-gradient(100% 90% at 0% 100%, #1B2E5C 0%, transparent 60%),
+    radial-gradient(60% 50% at 40% 60%, rgb(58 47 85 / 0.7) 0%, transparent 70%),
+    #0C1224;
+
+  /* ガラス */
+  --glass-fill: rgb(16 24 48 / 0.45);
+  --glass-fill-solid: rgb(16 24 48 / 0.92);
+  --glass-blur: 22px;
+  --glass-edge: rgb(200 215 245 / 0.2);
+  --glass-hi: rgb(220 230 255 / 0.25);
+  --glass-lo: rgb(0 0 0 / 0.35);
+  --glass-sheen: rgb(200 220 255 / 0.1);
+  --glass-shadow: rgb(0 0 0 / 0.45);
+  --glass-soft: rgb(255 255 255 / 0.06);
+  --glass-soft-hover: rgb(255 255 255 / 0.12);
+
+  /* ガラスの上の文字 */
+  --on-glass: #E6ECF5;
+  --on-glass-muted: #A9B4CA;
+
+  /* 選択中・強調 */
+  --brass: #C9A86A;
+  --on-brass: #0C1224;
+  --danger: #D9707A;
+  --danger-fill: #8A3A45;
+
+  --radius-pill: 999px;
+  --radius-panel: 20px;
+  --radius-btn: 12px;
+
+  --font: 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Yu Gothic', 'YuGothic', 'Noto Sans JP', sans-serif;
+  --font-display: 'Shippori Mincho B1', 'Hiragino Mincho ProN', 'Yu Mincho', serif;
+  color-scheme: dark;
 }
 
 html, body {
   margin: 0;
-  background: var(--desk);
-  color: var(--ink);
+  background: var(--desk-bg);
+  background-color: var(--desk);
+  background-attachment: fixed;
+  color: var(--on-glass);
   font-family: var(--font);
+  font-weight: 300;
   text-align: left;
 }
