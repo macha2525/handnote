@@ -1,4 +1,5 @@
 import { MARKER } from '../model/colors';
+import { icon, type IconName } from '../ui/icons';
 import {
   addPen, loadPens, MAX_PENS, PALETTE, removePen, savePens, SIZE_MAX, SIZE_MIN, SIZE_STEP, updatePen, type Pen,
 } from './pens';
@@ -38,6 +39,12 @@ export interface Toolbar {
   toggleEraser(): Tool;
 }
 
+function iconButton(name: IconName, title: string, onClick: () => void, cls = ''): HTMLButtonElement {
+  const b = button('', title, onClick, 'tb-icon ' + cls);
+  b.append(icon(name));
+  return b;
+}
+
 function button(label: string, title: string, onClick: () => void, cls = ''): HTMLButtonElement {
   const b = document.createElement('button');
   b.type = 'button';
@@ -62,9 +69,9 @@ export function createToolbar(opts: {
   const current = (): Pen => pens.find(p => p.id === penId) ?? pens[0];
   const state: ToolState = { tool: 'pen', penColor: current().color, penSize: current().size, eraserMode: loadEraserMode() };
   const el = document.createElement('div');
-  el.className = 'toolbar';
+  el.className = 'toolbar glass';
 
-  const back = button('本棚に戻る', '本棚に戻る', opts.onBack, 'tb-back');
+  const back = iconButton('back', '本棚に戻る', opts.onBack, 'tb-back');
   const title = document.createElement('span');
   title.className = 'tb-title';
   title.textContent = opts.title;
@@ -72,7 +79,7 @@ export function createToolbar(opts: {
   // ---- ペン立て ----
   const penRack = document.createElement('span');
   penRack.className = 'tb-pens';
-  const addBtn = button('＋', 'ペンを増やす', () => {
+  const addBtn = iconButton('plus', 'ペンを増やす', () => {
     pens = addPen(pens, current());
     savePens(pens);
     choosePen(pens[pens.length - 1].id);
@@ -102,7 +109,7 @@ export function createToolbar(opts: {
 
   // ---- 調整パネル ----
   const panel = document.createElement('div');
-  panel.className = 'pen-panel';
+  panel.className = 'pen-panel glass';
   panel.hidden = true;
   panel.setAttribute('role', 'dialog');
   panel.setAttribute('aria-label', 'ペンの調整');
@@ -185,9 +192,9 @@ export function createToolbar(opts: {
     return b;
   });
 
-  const undo = button('元に戻す', '元に戻す', opts.onUndo);
-  const redo = button('やり直す', 'やり直す', opts.onRedo);
-  const addPage = button('ページを足す', 'ページを足す', opts.onAddPage);
+  const undo = iconButton('undo', '元に戻す', opts.onUndo);
+  const redo = iconButton('redo', 'やり直す', opts.onRedo);
+  const addPage = iconButton('page-add', 'ページを足す', opts.onAddPage);
 
   const fileInput = document.createElement('input');
   fileInput.type = 'file';
@@ -198,7 +205,7 @@ export function createToolbar(opts: {
     fileInput.value = '';
     if (f) opts.onImportPdf(f);
   });
-  const importPdf = button('PDFを取り込む', 'PDFを取り込む', () => fileInput.click());
+  const importPdf = iconButton('pdf', 'PDFを取り込む', () => fileInput.click());
 
   const sep = () => { const s = document.createElement('span'); s.className = 'tb-sep'; return s; };
   el.append(back, title, sep(), penRack, sep(), toolBtns.highlighter, toolBtns.eraser, ...eraserBtns,

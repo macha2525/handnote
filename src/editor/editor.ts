@@ -123,7 +123,8 @@ export async function openEditor(root: HTMLElement, noteId: string, opts: Editor
   // ---- ページの配置 ----
   function layout() {
     const s = scale();
-    let y = PAGE_GAP;
+    // 1枚目の上には、紙の上に浮かぶ道具バーのぶんの余白がある（CSS で決める）
+    let y = views[0] ? views[0].el.offsetTop : PAGE_GAP;
     tops = []; heights = [];
     note.pages.forEach((p, i) => {
       const v = views[i];
@@ -390,7 +391,7 @@ export async function openEditor(root: HTMLElement, noteId: string, opts: Editor
   };
   // 指のタップで戻したとき、ボタンを押していないので小さく知らせる
   const toast = document.createElement('div');
-  toast.className = 'toast';
+  toast.className = 'toast glass';
   toast.setAttribute('role', 'status');
   root.append(toast);
   let toastTimer: ReturnType<typeof setTimeout> | undefined;
