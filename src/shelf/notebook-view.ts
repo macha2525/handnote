@@ -1,10 +1,13 @@
 import type { Background, Note, Section } from '../model/types';
 import { A4 } from '../model/types';
 import { newId } from '../model/ids';
-import { getNotebook, listNotes, listSections, saveNote, saveSection, StorageFullError } from '../storage/db';
+import {
+  deleteNote, deleteNotebook, deleteSection, getNotebook, listNotes, listSections, saveNote, saveSection,
+  StorageFullError,
+} from '../storage/db';
 import { createPdfNote } from '../pdf/pdf-doc';
 import { nextSectionLabel, textColorFor } from './labels';
-import { btn, el } from './shelf';
+import { btn, confirmDanger, el } from './shelf';
 
 const BACKGROUNDS: { value: Background; name: string }[] = [
   { value: 'plain', name: '無地' },
@@ -50,6 +53,7 @@ export async function openNotebookView(root: HTMLElement, notebookId: string, na
     btn('本棚に戻る', nav.openShelf),
     el('h1', 'bar-title', nb.title),
     btn(`${unit}を足す`, () => addSection(), 'btn btn-primary'),
+    btn('ノートブックを削除', () => removeNotebook(), 'btn btn-danger-quiet'),
   );
   const status = el('div', 'status');
   status.setAttribute('role', 'status');
@@ -91,6 +95,55 @@ export async function openNotebookView(root: HTMLElement, notebookId: string, na
     list.lastElementChild?.scrollIntoView({ block: 'nearest' });
   }
 
+  async function removeNotebook() {
+    const ok = await confirmDanger(root, {
+      title: 'ノートブックを削除',
+      message: `「${nb!.title}」を削除します。中のすべての${unit}とノートも消え、元に戻せません。`,
+      ok: '削除する',
+    });
+    if (!ok) return;
+    try {
+      await deleteNotebook(notebookId);
+      nav.openShelf();
+    } catch (e) {
+      status.textContent = (e as Error).message;
+    }
+  }
+
+  async function removeSection(s: Section, noteCount: number) {
+    const inside = noteCount ? `中のノート${noteCount}冊も消え、` : '';
+    const ok = await confirmDanger(root, {
+      title: `${s.label}を削除`,
+      message: `「${s.label}」を削除します。${inside}元に戻せません。`,
+      ok: '削除する',
+    });
+    if (!ok) return;
+    try {
+      await deleteSection(s.id);
+    } catch (e) {
+      status.textContent = (e as Error).message;
+      return;
+    }
+    sections = sections.filter(x => x.id !== s.id);
+    await render();
+  }
+
+  async function removeNote(n: Note) {
+    const ok = await confirmDanger(root, {
+      title: 'ノートを削除',
+      message: `「${n.title}」を削除します。書いた内容も消え、元に戻せません。`,
+      ok: '削除する',
+    });
+    if (!ok) return;
+    try {
+      await deleteNote(n.id);
+    } catch (e) {
+      status.textContent = (e as Error).message;
+      return;
+    }
+    await render();
+  }
+
   async function render() {
     list.replaceChildren();
     if (sections.length === 0) {
@@ -109,8 +162,10 @@ export async function openNotebookView(root: HTMLElement, notebookId: string, na
     const notes = await listNotes(s.id);
     const ul = el('ul', 'note-list');
     for (const n of notes) {
-      const li = el('li');
-      li.append(btn(n.title, () => nav.openNote(n.id), 'note-link'));
+      const li = el('li', 'note-item');
+      const del = btn('削除', () => removeNote(n), 'btn btn-small btn-danger-quiet');
+      del.setAttribute('aria-label', `${n.title}を削除`);
+      li.append(btn(n.title, () => nav.openNote(n.id), 'note-link'), del);
       ul.append(li);
     }
     row.append(ul);
@@ -134,6 +189,7 @@ export async function openNotebookView(root: HTMLElement, notebookId: string, na
     actions.append(
       btn('白紙ノートを作る', () => { chooser.hidden = !chooser.hidden; }),
       btn('PDFを取り込む', () => { pdfTarget = s; fileInput.click(); }),
+      btn(`この${unit}を削除`, () => removeSection(s, notes.length), 'btn btn-danger-quiet'),
     );
     row.append(actions, chooser);
     return row;

@@ -75,6 +75,30 @@ export async function listNotes(sectionId: string): Promise<Note[]> {
   return all.sort((a, b) => a.updatedAt - b.updatedAt);
 }
 
+/** ノートを消す。取り込んだPDFも一緒に消す */
+export async function deleteNote(id: string): Promise<void> {
+  const d = await db();
+  const tx = d.transaction(['notes', 'pdfs'], 'readwrite');
+  const n = await tx.objectStore('notes').get(id);
+  if (n) {
+    await tx.objectStore('notes').delete(id);
+    if (n.pdfId) await tx.objectStore('pdfs').delete(n.pdfId);
+  }
+  await tx.done;
+}
+
+/** 回・章を消す。中のノートもすべて消す */
+export async function deleteSection(id: string): Promise<void> {
+  for (const n of await (await db()).getAllFromIndex('notes', 'sectionId', id)) await deleteNote(n.id);
+  await (await db()).delete('sections', id);
+}
+
+/** ノートブックを消す。中の回・章とノートもすべて消す */
+export async function deleteNotebook(id: string): Promise<void> {
+  for (const s of await listSections(id)) await deleteSection(s.id);
+  await (await db()).delete('notebooks', id);
+}
+
 export async function putPdf(data: Blob): Promise<string> {
   const id = newId();
   // Blob ではなく ArrayBuffer で保存する（Safari の Blob 保存の不具合を避ける）

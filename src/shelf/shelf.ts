@@ -17,6 +17,26 @@ export function btn(label: string, onClick: () => void, cls = 'btn'): HTMLButton
   return b;
 }
 
+/** 削除などの確認。「削除する」を押したら true */
+export function confirmDanger(root: HTMLElement, opts: { title: string; message: string; ok: string }): Promise<boolean> {
+  return new Promise(resolve => {
+    const dlg = el('dialog', 'dialog');
+    let result = false;
+    dlg.append(el('h2', '', opts.title), el('p', 'dialog-message', opts.message));
+    const actions = el('div', 'actions');
+    const cancel = btn('やめる', () => dlg.close());
+    actions.append(
+      btn(opts.ok, () => { result = true; dlg.close(); }, 'btn btn-danger'),
+      cancel,
+    );
+    dlg.append(actions);
+    dlg.addEventListener('close', () => { dlg.remove(); resolve(result); });
+    root.append(dlg);
+    dlg.showModal();
+    cancel.focus(); // 誤って決定しないよう、最初は「やめる」に合わせる
+  });
+}
+
 /** 本棚：ノートブックを背表紙のように左寄せで並べる */
 export async function openShelf(root: HTMLElement, nav: { openNotebook(id: string): void }): Promise<void> {
   root.replaceChildren();

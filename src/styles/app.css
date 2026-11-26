@@ -52,6 +52,10 @@ input, textarea { -webkit-user-select: text; user-select: text; }
   background: var(--paper); color: var(--ink); font-size: 15px;
 }
 .btn-primary { border-color: var(--ink); font-weight: 700; }
+.btn-danger { background: var(--redpen); border-color: var(--redpen); color: #fff; font-weight: 700; }
+.btn-danger-quiet { color: var(--redpen); border-color: var(--redpen); }
+.btn-small { min-height: 32px; padding: 0 10px; font-size: 13px; }
+.dialog-message { margin: 0 0 16px; line-height: 1.6; }
 .btn:active, .tb-btn:active, .spine:active { transform: translateY(1px); }
 .status { padding: 8px 16px; margin: 0; color: var(--redpen); font-weight: 700; }
 .status:empty { display: none; }
@@ -85,5 +89,6 @@ input, textarea { -webkit-user-select: text; user-select: text; }
 .section-row { padding: 12px 0; border-bottom: 1px solid var(--rule); display: flex; flex-direction: column; gap: 8px; }
 .section-label { margin: 0; font-size: 17px; }
 .note-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.note-item { display: flex; align-items: center; gap: 12px; }
 .note-link { background: none; border: 0; padding: 6px 0; text-align: left; font-size: 16px; color: var(--ink); text-decoration: underline; text-decoration-color: var(--rule); cursor: pointer; }
 .bg-chooser { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
